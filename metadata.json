@@ -1,0 +1,6 @@
+{
+  "name": "MiCarro",
+  "description": "Plataforma estilo TallerYa y MiTaller para agencias de autos y concesionarias: catálogo de venta con multi-foto y contacto directo por WhatsApp, panel de agencia para inventario y cotizaciones, portal para que particulares ofrezcan sus autos, y panel de administración SaaS con control de planes, precios y cobros.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
