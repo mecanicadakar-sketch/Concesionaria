@@ -35,7 +35,7 @@ interface AppContextType {
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
   login: (usernameOrEmail: string, password: string) => { success: boolean; message?: string };
-  loginAsDemoUser: (userId: string) => void;
+  loginAsDemoUser: (userId: string) => { success: boolean; message?: string };
   logout: () => void;
   addUser: (userData: Omit<AppUser, 'id' | 'createdAt'>) => string;
   updateUser: (id: string, data: Partial<AppUser>) => void;
@@ -124,8 +124,13 @@ interface AppContextType {
   setFilters: React.Dispatch<React.SetStateAction<AppFilterState>>;
   resetFilters: () => void;
 
-  // Helpers
+  // Currency & Plan Pricing Helpers
+  exchangeRateUsdToPyg: number;
   formatPrice: (amount: number, currency?: CurrencyCode) => string;
+  formatPlanPrice: (
+    plan: SubscriptionPlan,
+    cycle?: 'monthly' | 'yearly'
+  ) => { usd: string; pyg: string; combined: string; monthlyUsd: number; monthlyPyg: number };
   generateWhatsappLink: (car: CarListing, customText?: string) => string;
   openWhatsappForCar: (car: CarListing, customText?: string) => void;
 
@@ -357,21 +362,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [filters, setFilters] = useState<AppFilterState>(INITIAL_FILTERS);
 
-  // Sync to LocalStorage
+  // Sync to LocalStorage safely (with quota overflow protection)
   useEffect(() => {
-    const dataToSave = {
-      users,
-      agencies,
-      currentAgencyId,
-      carListings,
-      privateOffers,
-      subscriptionPlans,
-      paymentGateways,
-      invoices,
-      leads,
-      accessCodes,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+    try {
+      const dataToSave = {
+        users,
+        agencies,
+        currentAgencyId,
+        carListings,
+        privateOffers,
+        subscriptionPlans,
+        paymentGateways,
+        invoices,
+        leads,
+        accessCodes,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+    } catch (storageErr) {
+      console.warn('LocalStorage quota reached or storage restricted; app state maintained in memory.', storageErr);
+    }
   }, [users, agencies, currentAgencyId, carListings, privateOffers, subscriptionPlans, paymentGateways, invoices, leads, accessCodes]);
 
   // Sync admin security state
@@ -405,6 +414,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const currentAgency = agencies.find((a) => a.id === currentAgencyId) || agencies[0] || null;
 
+  // Helper to validate agency subscription status for sellers
+  const checkUserAgencyEligibility = (user: AppUser): { allowed: boolean; message?: string } => {
+    // Super admins bypass agency checks
+    if (user.role === 'super_admin' || user.agencyId === 'all') {
+      return { allowed: true };
+    }
+
+    const assignedAgency = agencies.find((a) => a.id === user.agencyId);
+    if (!assignedAgency) {
+      return {
+        allowed: false,
+        message: '⛔ Acceso denegado: La concesionaria asignada a esta cuenta no existe o fue deshabilitada del sistema.',
+      };
+    }
+
+    // Check if subscription status is active or trial
+    const isStatusActive = assignedAgency.subscriptionStatus === 'active' || assignedAgency.subscriptionStatus === 'trial';
+    if (!isStatusActive) {
+      return {
+        allowed: false,
+        message: `⛔ Acceso suspendido: La concesionaria "${assignedAgency.name}" tiene su membresía inactiva (${assignedAgency.subscriptionStatus === 'past_due' ? 'pago pendiente' : assignedAgency.subscriptionStatus === 'suspended' ? 'suspendida' : 'inactiva'}). Cuando el titular abone el servicio de la app o canjee un código, se habilitará el acceso a los vendedores.`,
+      };
+    }
+
+    // Check expiration date
+    if (assignedAgency.subscriptionExpiresAt) {
+      const expDate = new Date(assignedAgency.subscriptionExpiresAt).getTime();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (expDate < today.getTime()) {
+        return {
+          allowed: false,
+          message: `⛔ Suscripción vencida: El plan de "${assignedAgency.name}" venció el ${assignedAgency.subscriptionExpiresAt}. El titular debe renovar el abono para habilitar a su equipo de ventas.`,
+        };
+      }
+    }
+
+    return { allowed: true };
+  };
+
   // Authentication methods
   const login = (usernameOrEmail: string, password: string): { success: boolean; message?: string } => {
     const cleanIdentifier = usernameOrEmail.trim().toLowerCase();
@@ -431,6 +480,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'Esta cuenta de vendedor ha sido pausada o desactivada por la agencia.' };
     }
 
+    // GATING: Verify that the seller's agency has an active paid subscription
+    const agencyCheck = checkUserAgencyEligibility(foundUser);
+    if (!agencyCheck.allowed) {
+      return { success: false, message: agencyCheck.message };
+    }
+
     const updatedUser = {
       ...foundUser,
       lastLoginAt: new Date().toISOString(),
@@ -446,19 +501,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
-  const loginAsDemoUser = (userId: string) => {
+  const loginAsDemoUser = (userId: string): { success: boolean; message?: string } => {
     const foundUser = users.find((u) => u.id === userId);
-    if (foundUser) {
-      const updatedUser = {
-        ...foundUser,
-        lastLoginAt: new Date().toISOString(),
-      };
-      setCurrentUser(updatedUser);
-      setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
-      if (updatedUser.agencyId && updatedUser.agencyId !== 'all') {
-        setCurrentAgencyId(updatedUser.agencyId);
-      }
+    if (!foundUser) {
+      return { success: false, message: 'Usuario no encontrado.' };
     }
+
+    // GATING: Verify that the seller's agency has an active paid subscription
+    const agencyCheck = checkUserAgencyEligibility(foundUser);
+    if (!agencyCheck.allowed) {
+      return { success: false, message: agencyCheck.message };
+    }
+
+    const updatedUser = {
+      ...foundUser,
+      lastLoginAt: new Date().toISOString(),
+    };
+    setCurrentUser(updatedUser);
+    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+    if (updatedUser.agencyId && updatedUser.agencyId !== 'all') {
+      setCurrentAgencyId(updatedUser.agencyId);
+    }
+    return { success: true };
   };
 
   const logout = () => {
@@ -490,6 +554,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Official / Market exchange rate reference (1 USD ~ 7.900 PYG Guaraníes)
+  const exchangeRateUsdToPyg = 7900;
+
   // Format currency
   const formatPrice = (amount: number, currency: CurrencyCode = 'USD'): string => {
     if (currency === 'USD') {
@@ -502,6 +569,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return `$ ${amount.toLocaleString('es-ES')}`;
     }
     return `${currency} ${amount.toLocaleString('es-ES')}`;
+  };
+
+  // Dual Currency Plan Price Formatter (USD & Guaraníes PYG)
+  const formatPlanPrice = (
+    plan: SubscriptionPlan,
+    cycle: 'monthly' | 'yearly' = 'monthly'
+  ) => {
+    const isYearly = cycle === 'yearly';
+    const usdAmount = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
+    
+    // Calculate PYG either from plan custom price or default exchange rate
+    const pygAmount = isYearly
+      ? plan.yearlyPricePyg || (plan.monthlyPricePyg ? plan.monthlyPricePyg * 10 : Math.round(plan.yearlyPrice * exchangeRateUsdToPyg))
+      : plan.monthlyPricePyg || Math.round(plan.monthlyPrice * exchangeRateUsdToPyg);
+
+    const usdFormatted = `USD $${usdAmount}`;
+    const pygFormatted = `₲ ${pygAmount.toLocaleString('es-PY')} Gs`;
+
+    return {
+      usd: usdFormatted,
+      pyg: pygFormatted,
+      combined: `${usdFormatted} / ${pygFormatted}`,
+      monthlyUsd: isYearly ? Math.round(usdAmount / 12) : usdAmount,
+      monthlyPyg: isYearly ? Math.round(pygAmount / 12) : pygAmount,
+    };
   };
 
   // WhatsApp Link Generator
@@ -891,8 +983,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
-  // Email OTP Simulation
-  const sendEmailVerificationCode = (email: string, purpose = 'admin_login'): { success: boolean; code: string; message: string } => {
+  // Email OTP Delivery & Verification (Resend.com + Local Safety fallback)
+  const sendEmailVerificationCode = (email: string, purpose = 'Acceso Administrador Seguro'): { success: boolean; code: string; message: string } => {
     // Generate 6-digit random number
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const otpSession = {
@@ -902,6 +994,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       purpose,
     };
     setLastGeneratedOtp(otpSession);
+
+    // Call backend endpoint to trigger Resend API email delivery
+    fetch('/api/auth/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        code,
+        purposeTitle: purpose,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.delivered) {
+          console.log(`[Resend OTP Sent]: Correo enviado con ID ${data.emailId}`);
+        } else if (data.resendError) {
+          console.warn(`[Resend OTP Warning]:`, data.resendError);
+        }
+      })
+      .catch((err) => {
+        console.warn('[Resend API Network Catch]:', err);
+      });
+
     return {
       success: true,
       code,
@@ -948,12 +1063,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const cleanPin = pinOrPass.trim();
 
     // Valid admin emails and PINs/passwords
-    // 1. mecanicadakar@gmail.com with PIN "2026" or "dakar2026" or "1234"
-    // 2. admin@micarro.com with password "micarro2026" or PIN "2026"
+    // mecanicadakar@gmail.com / admin@micarro.com with password/PIN "Fierro010368#"
     const isValidAdmin =
-      (cleanEmail === 'mecanicadakar@gmail.com' && (cleanPin === '2026' || cleanPin === 'dakar2026' || cleanPin === '1234' || cleanPin === 'admin')) ||
-      (cleanEmail === 'admin@micarro.com' && (cleanPin === 'micarro2026' || cleanPin === '2026' || cleanPin === 'admin')) ||
-      cleanPin === '2026';
+      (cleanEmail === 'mecanicadakar@gmail.com' && cleanPin === 'Fierro010368#') ||
+      (cleanEmail === 'admin@micarro.com' && cleanPin === 'Fierro010368#') ||
+      cleanPin === 'Fierro010368#';
 
     if (isValidAdmin) {
       setAdminFailedAttempts(0);
@@ -1068,10 +1182,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         leads,
         addLead,
         updateLeadStatus,
+        comparedCarIds,
+        isCompareModalOpen,
+        setIsCompareModalOpen,
+        toggleCompareCar,
+        addCarToCompare,
+        removeCarFromCompare,
+        clearCompareCars,
+        isCarCompared,
         filters,
         setFilters,
         resetFilters,
+        exchangeRateUsdToPyg,
         formatPrice,
+        formatPlanPrice,
         generateWhatsappLink,
         openWhatsappForCar,
         exportDatabaseJson,

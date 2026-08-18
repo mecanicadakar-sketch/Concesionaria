@@ -113,14 +113,6 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
     setTimeout(() => setSuccessMsg(''), 3000);
   };
 
-  const handlePasteDemoCode = () => {
-    if (lastGeneratedOtp?.code) {
-      const codeChars = lastGeneratedOtp.code.split('');
-      setDigits(codeChars);
-      handleVerify(lastGeneratedOtp.code);
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
       <div className="bg-white text-slate-900 border border-slate-200 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative">
@@ -144,24 +136,6 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
             {targetEmail}
           </span>
         </div>
-
-        {/* Demo Helper Banner for immediate testing */}
-        {lastGeneratedOtp && (
-          <div className="mb-5 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-              <span>
-                Código generado: <strong className="font-mono text-sm tracking-widest text-amber-950">{lastGeneratedOtp.code}</strong>
-              </span>
-            </div>
-            <button
-              onClick={handlePasteDemoCode}
-              className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-[11px] transition-colors"
-            >
-              Autocompletar
-            </button>
-          </div>
-        )}
 
         {/* 6 Digit Inputs */}
         <div className="flex justify-center gap-2 sm:gap-3 mb-6">

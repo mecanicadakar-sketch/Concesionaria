@@ -130,6 +130,8 @@ export interface SubscriptionPlan {
   description: string;
   monthlyPrice: number;
   yearlyPrice: number;
+  monthlyPricePyg?: number;
+  yearlyPricePyg?: number;
   currency: CurrencyCode;
   maxCars: number;
   maxPhotosPerCar: number;

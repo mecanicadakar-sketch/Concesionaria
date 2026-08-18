@@ -33,9 +33,12 @@ import {
   LogOut,
   Download,
   Upload,
+  Activity,
+  Users,
 } from 'lucide-react';
 import { AdminAuthView } from './AdminAuthView';
 import { SubscriptionCodesManager } from './SubscriptionCodesManager';
+import { LiveActivityMonitor } from './LiveActivityMonitor';
 
 export const AdminSaasPanelView: React.FC = () => {
   const {
@@ -53,6 +56,8 @@ export const AdminSaasPanelView: React.FC = () => {
     addAgency,
     carListings,
     formatPrice,
+    formatPlanPrice,
+    exchangeRateUsdToPyg,
     accessCodes,
     isAdminAuthenticated,
     logoutAdmin,
@@ -61,7 +66,7 @@ export const AdminSaasPanelView: React.FC = () => {
     resetToSampleData,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'codes' | 'plans' | 'gateways' | 'invoices' | 'agencies' | 'backup'>('codes');
+  const [activeTab, setActiveTab] = useState<'codes' | 'activity' | 'plans' | 'gateways' | 'invoices' | 'agencies' | 'backup'>('codes');
 
   // Editing Plan Modal / State
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
@@ -252,46 +257,68 @@ export const AdminSaasPanelView: React.FC = () => {
       </div>
 
       {/* KPI SaaS Metrics Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 text-xs mb-2">
-            <span className="font-semibold">MRR (Ingreso Mensual)</span>
+            <span className="font-semibold">MRR Mensual</span>
             <DollarSign className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-emerald-700 font-mono">
+          <p className="text-xl sm:text-2xl font-black text-emerald-700 font-mono">
             USD {Math.round(mrr).toLocaleString('es-ES')}
           </p>
-          <p className="text-[11px] text-slate-500 mt-1">Ingresos recurrentes activos</p>
+          <p className="text-[10px] text-slate-500 mt-1">Ingresos recurrentes</p>
         </div>
+
+        {/* Live Users Counter */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('activity')}
+          className="bg-gradient-to-br from-slate-900 to-blue-950 text-white border border-sky-400/40 rounded-2xl p-4 sm:p-5 shadow-md text-left transition-transform active:scale-98 relative overflow-hidden group"
+        >
+          <div className="flex items-center justify-between text-blue-200 text-xs mb-2">
+            <span className="font-bold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              <span>En Línea Ahora</span>
+            </span>
+            <Activity className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+          </div>
+          <p className="text-xl sm:text-2xl font-black text-emerald-400 font-mono">
+            14 personas
+          </p>
+          <p className="text-[10px] text-sky-200 mt-1 flex items-center gap-1">
+            <span>Ver telemetría en vivo</span>
+            <span>&rarr;</span>
+          </p>
+        </button>
 
         <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 text-xs mb-2">
-            <span className="font-semibold">Agencias Concesionarias</span>
+            <span className="font-semibold">Concesionarias</span>
             <Building2 className="w-4 h-4 text-blue-600" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">{agencies.length}</p>
-          <p className="text-[11px] text-slate-500 mt-1">
-            <strong className="text-emerald-700">{activeAgencies.length} activas</strong> • {trialAgencies.length} en prueba
+          <p className="text-xl sm:text-2xl font-black text-slate-900 font-mono">{agencies.length}</p>
+          <p className="text-[10px] text-slate-500 mt-1">
+            <strong className="text-emerald-700">{activeAgencies.length} activas</strong> • {trialAgencies.length} prueba
           </p>
         </div>
 
         <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 text-xs mb-2">
-            <span className="font-semibold">Autos en el Catálogo</span>
+            <span className="font-semibold">Autos Catálogo</span>
             <Car className="w-4 h-4 text-blue-600" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">{carListings.length}</p>
-          <p className="text-[11px] text-slate-500 mt-1">Inventario total publicado</p>
+          <p className="text-xl sm:text-2xl font-black text-slate-900 font-mono">{carListings.length}</p>
+          <p className="text-[10px] text-slate-500 mt-1">Inventario publicado</p>
         </div>
 
         <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 text-xs mb-2">
-            <span className="font-semibold">Códigos de Suscripción</span>
+            <span className="font-semibold">Códigos de Canje</span>
             <KeyRound className="w-4 h-4 text-amber-500" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">{accessCodes.length}</p>
-          <p className="text-[11px] text-slate-500 mt-1">
-            <strong className="text-emerald-700">{accessCodes.filter((c) => c.status === 'active').length} listos</strong> para canje
+          <p className="text-xl sm:text-2xl font-black text-slate-900 font-mono">{accessCodes.length}</p>
+          <p className="text-[10px] text-slate-500 mt-1">
+            <strong className="text-emerald-700">{accessCodes.filter((c) => c.status === 'active').length} listos</strong>
           </p>
         </div>
       </div>
@@ -307,9 +334,25 @@ export const AdminSaasPanelView: React.FC = () => {
           }`}
         >
           <KeyRound className="w-4 h-4" />
-          <span>Códigos de Suscripción (TallerYa)</span>
+          <span>Códigos de Suscripción</span>
           <span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-900">
             {accessCodes.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('activity')}
+          className={`py-3 px-4 flex items-center gap-2 border-b-2 transition-all shrink-0 rounded-t-xl ${
+            activeTab === 'activity'
+              ? 'border-blue-700 text-blue-700 bg-blue-50/50'
+              : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <Activity className="w-4 h-4 text-emerald-600" />
+          <span>📡 Usuarios en Vivo & Telemetría</span>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            En Vivo
           </span>
         </button>
 
@@ -377,6 +420,9 @@ export const AdminSaasPanelView: React.FC = () => {
       {/* TAB 0: CODES MANAGER (TallerYa Style) */}
       {activeTab === 'codes' && <SubscriptionCodesManager />}
 
+      {/* TAB: LIVE TELEMETRY & ACTIVITY MONITOR */}
+      {activeTab === 'activity' && <LiveActivityMonitor />}
+
       {/* TAB 1: PLANS & PRICING CONFIGURATION */}
       {activeTab === 'plans' && (
         <div className="space-y-6 animate-fadeIn">
@@ -412,16 +458,24 @@ export const AdminSaasPanelView: React.FC = () => {
                     <p className="text-xs text-slate-600 mt-1 leading-relaxed">{plan.description}</p>
                   </div>
 
-                  {/* Pricing Box */}
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-3xl font-black text-slate-900 font-mono">
-                        {plan.currency} {plan.monthlyPrice}
+                  {/* Pricing Box in USD and PYG */}
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="flex items-baseline justify-between">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">
+                          USD {plan.monthlyPrice}
+                        </span>
+                        <span className="text-xs text-slate-500 font-medium">/ mes</span>
+                      </div>
+                      <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md font-mono">
+                        ₲ {(plan.monthlyPricePyg || plan.monthlyPrice * exchangeRateUsdToPyg).toLocaleString('es-PY')} / mes
                       </span>
-                      <span className="text-xs text-slate-500 font-medium">/ mes</span>
                     </div>
-                    <div className="text-[11px] text-slate-500 mt-1 font-mono">
-                      Plan Anual: {plan.currency} {plan.yearlyPrice} (2 meses bonificados)
+                    <div className="text-[11px] text-slate-500 pt-1 border-t border-slate-200/60 font-mono flex flex-col sm:flex-row sm:justify-between gap-1">
+                      <span>Plan Anual USD: ${plan.yearlyPrice}</span>
+                      <span className="text-emerald-700 font-semibold">
+                        ₲ {(plan.yearlyPricePyg || plan.yearlyPrice * exchangeRateUsdToPyg).toLocaleString('es-PY')} / año
+                      </span>
                     </div>
                   </div>
 
@@ -514,9 +568,9 @@ export const AdminSaasPanelView: React.FC = () => {
                         {gw.type === 'bank_transfer'
                           ? 'Transferencia Bancaria SIPAP'
                           : gw.type === 'card'
-                          ? 'Pasarela de Tarjetas Bancard'
+                          ? 'Tarjetas en Guaraníes (₲) & USD ($)'
                           : gw.type === 'cash'
-                          ? 'Cobro en Sede / Efectivo'
+                          ? 'Cobro Presencial en Sede'
                           : 'Billetera Digital'}
                       </span>
                     </div>
@@ -553,7 +607,7 @@ export const AdminSaasPanelView: React.FC = () => {
                         type="text"
                         value={gw.bankName || ''}
                         onChange={(e) => updatePaymentGateway(gw.id, { bankName: e.target.value })}
-                        placeholder="Banco Itaú / Continental / Ueno"
+                        placeholder="Banco Itau"
                         className="w-full bg-slate-50 text-slate-900 rounded-xl p-2 border border-slate-200 text-xs"
                       />
                     </div>
@@ -563,7 +617,7 @@ export const AdminSaasPanelView: React.FC = () => {
                         type="text"
                         value={gw.accountHolder || ''}
                         onChange={(e) => updatePaymentGateway(gw.id, { accountHolder: e.target.value })}
-                        placeholder="MiCarro Software Paraguay S.A."
+                        placeholder="Camila Ayelen Torres"
                         className="w-full bg-slate-50 text-slate-900 rounded-xl p-2 border border-slate-200 text-xs"
                       />
                     </div>
@@ -573,7 +627,7 @@ export const AdminSaasPanelView: React.FC = () => {
                         type="text"
                         value={gw.accountNumber || ''}
                         onChange={(e) => updatePaymentGateway(gw.id, { accountNumber: e.target.value })}
-                        placeholder="Cta Gs: 72019482 / USD: 83019482"
+                        placeholder="620011158"
                         className="w-full bg-slate-50 text-blue-900 font-bold rounded-xl p-2 border border-slate-200 text-xs font-mono"
                       />
                     </div>
@@ -583,7 +637,7 @@ export const AdminSaasPanelView: React.FC = () => {
                         type="text"
                         value={gw.cbuOrAlias || ''}
                         onChange={(e) => updatePaymentGateway(gw.id, { cbuOrAlias: e.target.value })}
-                        placeholder="Alias: MICARRO.PY"
+                        placeholder="7226273"
                         className="w-full bg-slate-50 text-emerald-800 font-bold rounded-xl p-2 border border-slate-200 text-xs font-mono"
                       />
                     </div>
@@ -593,7 +647,7 @@ export const AdminSaasPanelView: React.FC = () => {
                         type="text"
                         value={gw.cuitOrTaxId || ''}
                         onChange={(e) => updatePaymentGateway(gw.id, { cuitOrTaxId: e.target.value })}
-                        placeholder="RUC: 80099432-1"
+                        placeholder="7.226.273-7"
                         className="w-full bg-slate-50 text-slate-900 rounded-xl p-2 border border-slate-200 text-xs font-mono"
                       />
                     </div>
@@ -816,7 +870,7 @@ export const AdminSaasPanelView: React.FC = () => {
 
               return (
                 <div key={agency.id} className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-3">
                       <img
                         src={agency.logoUrl}
@@ -829,17 +883,32 @@ export const AdminSaasPanelView: React.FC = () => {
                       </div>
                     </div>
 
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-bold border ${
-                        agency.subscriptionStatus === 'active'
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                          : agency.subscriptionStatus === 'trial'
-                          ? 'bg-amber-100 text-amber-800 border-amber-300'
-                          : 'bg-rose-100 text-rose-800 border-rose-300'
-                      }`}
-                    >
-                      {agency.subscriptionStatus === 'active' ? '🟢 Membresía Activa' : '🟡 En Período de Prueba'}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <select
+                        value={agency.subscriptionStatus}
+                        onChange={(e) => updateAgency(agency.id, { subscriptionStatus: e.target.value as any })}
+                        className={`text-xs font-bold rounded-xl px-2.5 py-1 border focus:outline-none cursor-pointer ${
+                          agency.subscriptionStatus === 'active'
+                            ? 'bg-emerald-100 border-emerald-300 text-emerald-800'
+                            : agency.subscriptionStatus === 'trial'
+                            ? 'bg-sky-100 border-sky-300 text-sky-800'
+                            : agency.subscriptionStatus === 'past_due'
+                            ? 'bg-amber-100 border-amber-300 text-amber-800'
+                            : 'bg-rose-100 border-rose-300 text-rose-800'
+                        }`}
+                      >
+                        <option value="active">🟢 Activa (Vendedores Habilitados)</option>
+                        <option value="trial">🔵 Prueba (Vendedores Habilitados)</option>
+                        <option value="past_due">🟡 Mora (Vendedores Bloqueados)</option>
+                        <option value="suspended">🔴 Suspendida (Vendedores Bloqueados)</option>
+                        <option value="cancelled">⚪ Cancelada (Vendedores Bloqueados)</option>
+                      </select>
+                      <span className="text-[10px] text-slate-500">
+                        {agency.subscriptionStatus === 'active' || agency.subscriptionStatus === 'trial'
+                          ? '✅ Vendedores autorizados a loguearse'
+                          : '⛔ Logueo de vendedores bloqueado'}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-2xl border border-slate-100">
@@ -929,19 +998,71 @@ export const AdminSaasPanelView: React.FC = () => {
                   <input
                     type="number"
                     value={editingPlan.monthlyPrice}
-                    onChange={(e) => setEditingPlan({ ...editingPlan, monthlyPrice: Number(e.target.value) })}
+                    onChange={(e) => {
+                      const usd = Number(e.target.value);
+                      setEditingPlan({
+                        ...editingPlan,
+                        monthlyPrice: usd,
+                        monthlyPricePyg: usd * exchangeRateUsdToPyg,
+                      });
+                    }}
                     className="w-full bg-slate-50 text-slate-900 font-bold rounded-xl p-2.5 border border-slate-200"
                   />
                 </div>
+                <div>
+                  <label className="block text-slate-700 mb-1 font-semibold">Precio Mensual (PYG ₲)</label>
+                  <input
+                    type="number"
+                    step="10000"
+                    value={editingPlan.monthlyPricePyg || editingPlan.monthlyPrice * exchangeRateUsdToPyg}
+                    onChange={(e) =>
+                      setEditingPlan({
+                        ...editingPlan,
+                        monthlyPricePyg: Number(e.target.value),
+                      })
+                    }
+                    className="w-full bg-slate-50 text-emerald-900 font-bold font-mono rounded-xl p-2.5 border border-slate-200"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 mb-1 font-semibold">Precio Anual (USD)</label>
                   <input
                     type="number"
                     value={editingPlan.yearlyPrice}
-                    onChange={(e) => setEditingPlan({ ...editingPlan, yearlyPrice: Number(e.target.value) })}
+                    onChange={(e) => {
+                      const usd = Number(e.target.value);
+                      setEditingPlan({
+                        ...editingPlan,
+                        yearlyPrice: usd,
+                        yearlyPricePyg: usd * exchangeRateUsdToPyg,
+                      });
+                    }}
                     className="w-full bg-slate-50 text-slate-900 font-bold rounded-xl p-2.5 border border-slate-200"
                   />
                 </div>
+                <div>
+                  <label className="block text-slate-700 mb-1 font-semibold">Precio Anual (PYG ₲)</label>
+                  <input
+                    type="number"
+                    step="50000"
+                    value={editingPlan.yearlyPricePyg || editingPlan.yearlyPrice * exchangeRateUsdToPyg}
+                    onChange={(e) =>
+                      setEditingPlan({
+                        ...editingPlan,
+                        yearlyPricePyg: Number(e.target.value),
+                      })
+                    }
+                    className="w-full bg-slate-50 text-emerald-900 font-bold font-mono rounded-xl p-2.5 border border-slate-200"
+                  />
+                </div>
+              </div>
+
+              <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-[11px] flex items-center justify-between">
+                <span>Tipo de cambio actual: <strong>1 USD = {exchangeRateUsdToPyg.toLocaleString('es-PY')} PYG</strong></span>
+                <span className="text-[10px] text-emerald-600 font-semibold">Conversión automática activa</span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

@@ -116,6 +116,7 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({
   const [status, setStatus] = useState<CarListing['status']>(targetInitialCar?.status || 'available');
 
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Reset form when targetInitialCar changes
@@ -161,20 +162,78 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({
     }
   }, [make, model, version, year, initialCar]);
 
-  // Handle Photo File Upload (multi-file support)
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Client-side image compressor for lightweight, lightning-fast storage & zero quota crashes
+  const compressImageFile = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (loadEvt) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 900;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(loadEvt.target?.result as string);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          resolve(dataUrl);
+        };
+        img.onerror = () => resolve(loadEvt.target?.result as string);
+        img.src = loadEvt.target?.result as string;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Handle Photo File Upload (multi-file support with automatic compression)
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file: File) => {
-      const reader = new FileReader();
-      reader.onload = (loadEvt) => {
-        if (loadEvt.target?.result) {
-          setPhotos((prev) => [...prev, loadEvt.target!.result as string]);
+    setIsUploadingPhotos(true);
+    setErrorMsg('');
+
+    try {
+      const fileList: File[] = Array.from(files);
+      const compressedUrls: string[] = [];
+
+      for (const file of fileList) {
+        const compressed = await compressImageFile(file);
+        if (compressed) {
+          compressedUrls.push(compressed);
         }
-      };
-      reader.readAsDataURL(file);
-    });
+      }
+
+      setPhotos((prev) => [...prev, ...compressedUrls]);
+    } catch (err) {
+      console.error('Error procesando fotos:', err);
+      setErrorMsg('Ocurrió un error al procesar las fotos. Prueba agregando una URL o una foto más liviana.');
+    } finally {
+      setIsUploadingPhotos(false);
+      // Reset input value
+      e.target.value = '';
+    }
   };
 
   const handleAddPhotoUrl = () => {
@@ -182,6 +241,10 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({
       setPhotos((prev) => [...prev, photoUrlInput.trim()]);
       setPhotoUrlInput('');
     }
+  };
+
+  const handleAddPresetPhoto = (url: string) => {
+    setPhotos((prev) => [...prev, url]);
   };
 
   const handleRemovePhoto = (index: number) => {
@@ -261,6 +324,8 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg('');
+
     if (!title.trim() || !make.trim() || !model.trim()) {
       setErrorMsg('Por favor completa el título, marca y modelo.');
       return;
@@ -271,52 +336,66 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({
       return;
     }
 
-    const targetAgency = agencies.find((a) => a.id === agencyId) || currentAgency || agencies[0];
-    const targetSeller = users.find((u) => u.id === sellerId);
+    try {
+      const targetAgency =
+        agencies.find((a) => a.id === agencyId) ||
+        currentAgency ||
+        agencies[0] || {
+          id: 'agency-dakar',
+          name: 'Mecánica Dakar Autos & Concesionaria',
+          whatsappNumber: '5491148905500',
+          city: 'Asunción',
+        };
 
-    const carData = {
-      agencyId: targetAgency.id,
-      agencyName: targetAgency.name,
-      agencyWhatsapp: targetAgency.whatsappNumber,
-      agencyCity: targetAgency.city,
-      createdBySellerId: targetSeller ? targetSeller.id : currentUser?.id,
-      sellerName: targetSeller ? targetSeller.name : currentUser?.name,
-      sellerWhatsapp: targetSeller ? targetSeller.whatsappNumber : currentUser?.whatsappNumber,
-      title: title.trim(),
-      make: make.trim(),
-      model: model.trim(),
-      version: version.trim(),
-      year: Number(year),
-      mileage: Number(mileage),
-      price: Number(price),
-      currency,
-      condition,
-      transmission,
-      fuelType,
-      bodyType,
-      color: color.trim(),
-      doors: Number(doors),
-      engine: engine.trim(),
-      traction,
-      plateEnding: plateEnding.trim() || undefined,
-      status,
-      isFeatured,
-      acceptsTradeIn,
-      financingAvailable,
-      financingDetails: financingAvailable ? financingDetails.trim() : undefined,
-      photos,
-      features,
-      description: description.trim(),
-      warrantyMonths: warrantyMonths ? Number(warrantyMonths) : undefined,
-    };
+      const targetSeller = users.find((u) => u.id === sellerId);
 
-    if (initialCar) {
-      updateCarListing(initialCar.id, carData);
-    } else {
-      addCarListing(carData);
+      const carData = {
+        agencyId: targetAgency.id,
+        agencyName: targetAgency.name,
+        agencyWhatsapp: targetAgency.whatsappNumber,
+        agencyCity: targetAgency.city,
+        createdBySellerId: targetSeller ? targetSeller.id : currentUser?.id || 'admin',
+        sellerName: targetSeller ? targetSeller.name : currentUser?.name || 'Ventas MiCarro',
+        sellerWhatsapp: targetSeller ? targetSeller.whatsappNumber : currentUser?.whatsappNumber || targetAgency.whatsappNumber,
+        title: title.trim(),
+        make: make.trim(),
+        model: model.trim(),
+        version: version.trim(),
+        year: Number(year),
+        mileage: Number(mileage),
+        price: Number(price),
+        currency,
+        condition,
+        transmission,
+        fuelType,
+        bodyType,
+        color: color.trim(),
+        doors: Number(doors),
+        engine: engine.trim(),
+        traction,
+        plateEnding: plateEnding.trim() || undefined,
+        status,
+        isFeatured,
+        acceptsTradeIn,
+        financingAvailable,
+        financingDetails: financingAvailable ? financingDetails.trim() : undefined,
+        photos,
+        features,
+        description: description.trim(),
+        warrantyMonths: warrantyMonths ? Number(warrantyMonths) : undefined,
+      };
+
+      if (initialCar) {
+        updateCarListing(initialCar.id, carData);
+      } else {
+        addCarListing(carData);
+      }
+
+      onClose();
+    } catch (err: any) {
+      console.error('Error guardando vehículo:', err);
+      setErrorMsg('Hubo un inconveniente al guardar el auto. Intenta nuevamente.');
     }
-
-    onClose();
   };
 
   return (
@@ -449,39 +528,83 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({
               ))}
 
               {/* Upload Drop Zone / Button */}
-              <label className="h-28 rounded-xl border-2 border-dashed border-slate-700 hover:border-amber-500/80 bg-slate-950/60 flex flex-col items-center justify-center text-slate-400 hover:text-white cursor-pointer transition-colors p-2 text-center">
-                <Upload className="w-5 h-5 mb-1 text-amber-400" />
-                <span className="text-[11px] font-bold">Subir Fotos</span>
-                <span className="text-[9px] text-slate-500">JPG, PNG o WebP</span>
+              <label className="h-28 rounded-xl border-2 border-dashed border-slate-700 hover:border-amber-500/80 bg-slate-950/60 flex flex-col items-center justify-center text-slate-400 hover:text-white cursor-pointer transition-colors p-2 text-center relative overflow-hidden">
+                {isUploadingPhotos ? (
+                  <div className="flex flex-col items-center justify-center space-y-1 text-amber-400 animate-pulse">
+                    <Sparkles className="w-5 h-5 animate-spin" />
+                    <span className="text-[11px] font-bold">Comprimiendo...</span>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-5 h-5 mb-1 text-amber-400" />
+                    <span className="text-[11px] font-bold">Subir Fotos</span>
+                    <span className="text-[9px] text-slate-500">JPG, PNG o WebP</span>
+                  </>
+                )}
                 <input
                   type="file"
                   multiple
                   accept="image/*"
                   onChange={handleFileChange}
+                  disabled={isUploadingPhotos}
                   className="hidden"
                 />
               </label>
             </div>
 
-            {/* Quick URL Input */}
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Link className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="O pegar URL directa de imagen (https://...)"
-                  value={photoUrlInput}
-                  onChange={(e) => setPhotoUrlInput(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                />
+            {/* Quick URL Input & Preset Images */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Link className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="O pegar URL directa de imagen (https://...)"
+                    value={photoUrlInput}
+                    onChange={(e) => setPhotoUrlInput(e.target.value)}
+                    className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddPhotoUrl}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold"
+                >
+                  Agregar URL
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleAddPhotoUrl}
-                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold"
-              >
-                Agregar URL
-              </button>
+
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
+                <span>Fotos de muestra rápida:</span>
+                <button
+                  type="button"
+                  onClick={() => handleAddPresetPhoto('https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=1000')}
+                  className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]"
+                >
+                  + Pickup 4x4
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddPresetPhoto('https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1000')}
+                  className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]"
+                >
+                  + Coupé Deportivo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddPresetPhoto('https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1000')}
+                  className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]"
+                >
+                  + Sedán Ejecutivo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddPresetPhoto('https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=1000')}
+                  className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px]"
+                >
+                  + SUV Familiar
+                </button>
+              </div>
             </div>
           </div>
 

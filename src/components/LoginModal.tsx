@@ -144,7 +144,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleDemoSelect = (u: AppUser) => {
-    loginAsDemoUser(u.id);
+    setErrorMessage('');
+    setSuccessMessage('');
+    const res = loginAsDemoUser(u.id);
+    if (res && !res.success) {
+      setErrorMessage(res.message || 'No se puede iniciar sesión: La concesionaria asignada no tiene el servicio habilitado.');
+      return;
+    }
     setSuccessMessage(`Ingresaste como ${u.name} (${u.role === 'seller' ? 'Vendedor' : 'Gerente'})`);
     setTimeout(() => {
       onClose();
@@ -333,35 +339,56 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           {/* 2. Demo User Fast-Switcher */}
           {mode === 'demo' && (
             <div className="space-y-3">
-              <p className="text-xs text-slate-500">
-                Selecciona un asesor o gerente para probar el sistema de carga y atención inmediata con sus credenciales:
-              </p>
+              <div className="p-3 bg-blue-50/70 border border-blue-200/80 rounded-2xl text-[11px] text-blue-900 leading-relaxed">
+                <strong>Regla de Acceso por Suscripción:</strong> Los vendedores solo pueden ingresar si su concesionaria tiene el abono mensual al día. Si la agencia tiene pagos pendientes o está suspendida, el acceso de vendedores se bloquea automáticamente.
+              </div>
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {users.map((u) => (
-                  <button
-                    key={u.id}
-                    onClick={() => handleDemoSelect(u)}
-                    className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 flex items-center justify-between text-left transition-all group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={u.avatarUrl}
-                        alt={u.name}
-                        className="w-9 h-9 rounded-full object-cover border border-slate-300"
-                      />
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <p className="text-xs font-bold text-slate-900 group-hover:text-blue-700">{u.name}</p>
-                          <span className="text-[10px] text-blue-700 font-mono font-bold">@{u.username}</span>
+                {users.map((u) => {
+                  const userAgency = agencies.find((a) => a.id === u.agencyId);
+                  const isAgencyActive =
+                    u.role === 'super_admin' ||
+                    (userAgency && (userAgency.subscriptionStatus === 'active' || userAgency.subscriptionStatus === 'trial'));
+
+                  return (
+                    <button
+                      key={u.id}
+                      onClick={() => handleDemoSelect(u)}
+                      className={`w-full p-3 rounded-xl border flex items-center justify-between text-left transition-all group ${
+                        isAgencyActive
+                          ? 'bg-slate-50 border-slate-200 hover:border-blue-500 hover:bg-blue-50/50'
+                          : 'bg-rose-50/40 border-rose-200/70 hover:border-rose-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={u.avatarUrl}
+                          alt={u.name}
+                          className="w-9 h-9 rounded-full object-cover border border-slate-300"
+                        />
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-xs font-bold text-slate-900 group-hover:text-blue-700">{u.name}</p>
+                            <span className="text-[10px] text-blue-700 font-mono font-bold">@{u.username}</span>
+                            {isAgencyActive ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800">
+                                <span className="w-1 h-1 rounded-full bg-emerald-500"></span>
+                                Habilitado
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-100 text-rose-800">
+                                ⛔ Bloqueado (Falta Pago)
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500">
+                            {u.agencyName} • {u.role === 'seller' ? 'Vendedor' : 'Gerente'}
+                          </p>
                         </div>
-                        <p className="text-[11px] text-slate-500">
-                          {u.agencyName} • {u.role === 'seller' ? 'Vendedor' : 'Gerente'}
-                        </p>
                       </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-700 group-hover:translate-x-1 transition-all" />
-                  </button>
-                ))}
+                      <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-700 group-hover:translate-x-1 transition-all" />
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -430,7 +457,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Concesionaria</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Concesionaria Asignada</label>
                   <select
                     value={regAgencyId}
                     onChange={(e) => setRegAgencyId(e.target.value)}
@@ -438,19 +465,32 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                   >
                     {agencies.map((a) => (
                       <option key={a.id} value={a.id}>
-                        {a.name}
+                        {a.name} ({a.subscriptionStatus === 'active' ? '🟢 Habilitada' : a.subscriptionStatus === 'trial' ? '🔵 Prueba' : '🔴 Inactiva/Pago pendiente'})
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
 
+              {/* Notice regarding agency subscription */}
+              {(() => {
+                const selAgency = agencies.find((a) => a.id === regAgencyId);
+                if (selAgency && selAgency.subscriptionStatus !== 'active' && selAgency.subscriptionStatus !== 'trial') {
+                  return (
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px]">
+                      ⚠️ <strong>Aviso de suscripción:</strong> La concesionaria "{selAgency.name}" tiene su abono suspendido o pendiente de pago. La cuenta de vendedor se creará pero no podrá iniciar sesión hasta que la concesionaria pague el servicio.
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               <button
                 type="submit"
                 className="w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 mt-3"
               >
                 <UserPlus className="w-4 h-4" />
-                <span>Registrar y Comenzar a Cargar Autos</span>
+                <span>Registrar Vendedor</span>
               </button>
             </form>
           )}

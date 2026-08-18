@@ -10,11 +10,20 @@ import { CarDetailModal } from './components/CarDetailModal';
 import { CarFormModal } from './components/CarFormModal';
 import { LoginModal } from './components/LoginModal';
 import { RedeemCodeModal } from './components/RedeemCodeModal';
+import { CompareCarsModal } from './components/CompareCarsModal';
 import { CarListing } from './types';
 import { Car, Building2, Tag, ShieldCheck, Plus, Sparkles, KeyRound } from 'lucide-react';
 
 const MainContent: React.FC = () => {
-  const { currentView, setCurrentView, isAuthModalOpen, setIsAuthModalOpen, currentAgency } = useApp();
+  const {
+    currentView,
+    setCurrentView,
+    isAuthModalOpen,
+    setIsAuthModalOpen,
+    currentAgency,
+    isCompareModalOpen,
+    setIsCompareModalOpen,
+  } = useApp();
   const [selectedDetailCar, setSelectedDetailCar] = useState<CarListing | null>(null);
   const [isCarFormOpen, setIsCarFormOpen] = useState(false);
   const [editingCar, setEditingCar] = useState<CarListing | null>(null);
@@ -144,6 +153,13 @@ const MainContent: React.FC = () => {
       <RedeemCodeModal
         isOpen={isRedeemModalOpen}
         onClose={() => setIsRedeemModalOpen(false)}
+      />
+
+      {/* Vehicle Comparison Modal (Side-by-side up to 3 cars) */}
+      <CompareCarsModal
+        isOpen={isCompareModalOpen}
+        onClose={() => setIsCompareModalOpen(false)}
+        onSelectCar={handleOpenCarDetail}
       />
     </div>
   );

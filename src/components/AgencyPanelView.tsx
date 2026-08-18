@@ -37,7 +37,9 @@ import {
   Star,
   Copy,
   Check,
+  Lightbulb,
 } from 'lucide-react';
+import { UploadTutorialBanner } from './UploadTutorialBanner';
 
 interface AgencyPanelViewProps {
   onOpenCarForm: (car?: CarListing) => void;
@@ -67,6 +69,8 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
     subscriptionPlans,
     paymentGateways,
     formatPrice,
+    formatPlanPrice,
+    exchangeRateUsdToPyg,
     openWhatsappForCar,
     markInvoicePaid,
     currentUser,
@@ -87,6 +91,14 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
   const [agencyNoteInput, setAgencyNoteInput] = useState('');
   const [copiedCarId, setCopiedCarId] = useState<string | null>(null);
   const [copiedPaymentText, setCopiedPaymentText] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [plansCycleView, setPlansCycleView] = useState<'monthly' | 'yearly'>('monthly');
+
+  const handleCopyText = (text: string, fieldKey: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(fieldKey);
+    setTimeout(() => setCopiedField(null), 2500);
+  };
 
   // New Seller Modal State
   const [isAddSellerOpen, setIsAddSellerOpen] = useState(false);
@@ -211,45 +223,62 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Top Welcome Bar with Seller Info & Fast Actions */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm relative overflow-hidden">
+      {/* Top Welcome Bar with Seller Info & Fast Actions (Sport Car with Azul Celeste background) */}
+      <div className="relative rounded-3xl p-6 sm:p-7 shadow-xl overflow-hidden border border-sky-400/30 text-white bg-slate-950">
+        {/* Background Sports Car Image with Azul Celeste / Sky Blue Glow */}
+        <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden">
+          <img
+            src="https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?w=1600&auto=format&fit=crop&q=85"
+            alt="Fondo automóvil deportivo Portal Carga"
+            referrerPolicy="no-referrer"
+            className="w-full h-full object-cover object-right sm:object-right-center opacity-40 scale-105 filter saturate-150 contrast-110"
+          />
+          {/* Subtle directional gradients for azul celeste atmosphere and impeccable text legibility */}
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 sm:via-slate-950/70 to-sky-950/40"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-sky-900/30"></div>
+        </div>
+
+        {/* Ambient celeste/cyan light flares */}
+        <div className="absolute -top-10 right-10 w-72 h-72 bg-sky-400/20 rounded-full blur-3xl pointer-events-none z-0"></div>
+        <div className="absolute bottom-0 right-1/3 w-64 h-64 bg-blue-600/15 rounded-full blur-3xl pointer-events-none z-0"></div>
+
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           {/* Agency & Seller Profile Info */}
           <div className="flex items-start sm:items-center gap-4">
             <img
               src={currentAgency.logoUrl}
               alt={currentAgency.name}
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-slate-200 shadow-sm shrink-0 bg-slate-50"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-sky-400/40 shadow-lg shrink-0 bg-slate-900 backdrop-blur-md"
             />
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl sm:text-2xl font-black text-slate-900">{currentAgency.name}</h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                <h1 className="text-xl sm:text-2xl font-black text-white drop-shadow-sm">{currentAgency.name}</h1>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-400/20 text-sky-200 border border-sky-400/40 backdrop-blur-md">
                   {agencyPlan.name}
                 </span>
                 {currentAgency.verified && (
-                  <span className="flex items-center gap-1 text-[11px] text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Verificada
+                  <span className="flex items-center gap-1 text-[11px] text-emerald-300 font-semibold bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/30 backdrop-blur-md">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Verificada
                   </span>
                 )}
               </div>
 
               {/* Logged in seller tag */}
-              <div className="flex items-center gap-2 flex-wrap text-xs text-slate-600 pt-0.5">
+              <div className="flex items-center gap-2 flex-wrap text-xs text-sky-100/90 pt-0.5">
                 {currentUser ? (
-                  <div className="flex items-center gap-2 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                  <div className="flex items-center gap-2 bg-slate-900/80 px-2.5 py-1 rounded-xl border border-sky-400/30 backdrop-blur-md">
                     <img
                       src={currentUser.avatarUrl}
                       alt={currentUser.name}
-                      className="w-4 h-4 rounded-full object-cover border border-blue-500"
+                      className="w-4 h-4 rounded-full object-cover border border-sky-400"
                     />
                     <span>
-                      Sesión activa: <strong className="text-blue-900 font-bold">{currentUser.name}</strong> (
+                      Sesión activa: <strong className="text-sky-300 font-bold">{currentUser.name}</strong> (
                       {currentUser.role === 'seller' ? 'Vendedor' : 'Gerente'})
                     </span>
                     <button
                       onClick={() => setIsAuthModalOpen(true)}
-                      className="text-blue-700 hover:text-blue-900 underline text-[11px] ml-1 font-semibold"
+                      className="text-sky-300 hover:text-white underline text-[11px] ml-1 font-semibold"
                     >
                       Cambiar
                     </button>
@@ -257,16 +286,16 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
                 ) : (
                   <button
                     onClick={() => setIsAuthModalOpen(true)}
-                    className="flex items-center gap-1.5 bg-blue-700 text-white font-bold px-2.5 py-1 rounded-lg text-xs hover:bg-blue-800 transition-colors shadow-sm"
+                    className="flex items-center gap-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-xs transition-colors shadow-md shadow-sky-500/20"
                   >
                     <KeyRound className="w-3.5 h-3.5" />
                     <span>Iniciar Sesión de Vendedor</span>
                   </button>
                 )}
 
-                <span className="text-slate-300 hidden sm:inline">•</span>
-                <span className="text-slate-500 hidden sm:inline flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-sky-400/60 hidden sm:inline">•</span>
+                <span className="text-sky-200/80 hidden sm:inline flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-sky-400" />
                   {currentAgency.address}, {currentAgency.city}
                 </span>
               </div>
@@ -276,8 +305,15 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
           {/* Quick CTAs */}
           <div className="flex items-center gap-2.5 flex-wrap">
             <button
-              onClick={() => onOpenCarForm()}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs sm:text-sm shadow-md shadow-blue-700/20 transition-all active:scale-98"
+              onClick={() => {
+                if (currentAgency.subscriptionStatus !== 'active' && currentAgency.subscriptionStatus !== 'trial') {
+                  setActiveTab('subscription');
+                  alert(`⛔ Suscripción inactiva: La concesionaria "${currentAgency.name}" tiene su membresía suspendida o pendiente de pago. Debe abonar el servicio para habilitar la carga de vehículos y el acceso a los vendedores.`);
+                  return;
+                }
+                onOpenCarForm();
+              }}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-amber-400/25 transition-all active:scale-98"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
               <span>➕ Cargar Nuevo Auto</span>
@@ -285,32 +321,68 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
 
             <button
               onClick={() => setIsAddSellerOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs border border-slate-200 transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-3 rounded-2xl bg-sky-950/70 hover:bg-sky-900/80 text-white font-bold text-xs border border-sky-400/30 backdrop-blur-md transition-colors"
             >
-              <UserPlus className="w-4 h-4 text-blue-700" />
+              <UserPlus className="w-4 h-4 text-sky-300" />
               <span>Nuevo Vendedor</span>
             </button>
           </div>
         </div>
 
         {/* Inventory Capacity Bar */}
-        <div className="mt-5 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-slate-600">
+        <div className="mt-5 pt-4 border-t border-sky-400/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs relative z-10">
+          <div className="flex items-center gap-2 text-sky-100">
             <span>Cupo de Salón ({agencyPlan.name}):</span>
-            <strong className="text-slate-900 font-bold">
+            <strong className="text-amber-300 font-bold font-mono">
               {agencyCars.length} / {maxCarsAllowed} vehículos
             </strong>
           </div>
-          <div className="w-full sm:w-64 bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200">
+          <div className="w-full sm:w-64 bg-slate-900/80 rounded-full h-2.5 overflow-hidden border border-sky-400/30">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
-                capacityPercent > 85 ? 'bg-rose-500' : 'bg-blue-600'
+                capacityPercent > 85 ? 'bg-rose-500' : 'bg-sky-400'
               }`}
               style={{ width: `${capacityPercent}%` }}
             ></div>
           </div>
         </div>
       </div>
+
+      {/* Agency Subscription Status Alert */}
+      {currentAgency.subscriptionStatus !== 'active' && currentAgency.subscriptionStatus !== 'trial' && (
+        <div className="p-5 rounded-3xl bg-rose-50 border-2 border-rose-300 text-rose-950 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm animate-fadeIn">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 shadow-sm">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-rose-900 flex items-center gap-2">
+                <span>⛔ Concesionaria con Suscripción Inactiva / Pago Pendiente</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] bg-rose-200 text-rose-800 font-bold uppercase font-mono">
+                  {currentAgency.subscriptionStatus === 'past_due'
+                    ? 'En Mora'
+                    : currentAgency.subscriptionStatus === 'suspended'
+                    ? 'Suspendida'
+                    : 'Inactiva'}
+                </span>
+              </h3>
+              <p className="text-xs text-rose-800 mt-1 max-w-2xl leading-relaxed">
+                El acceso para vendedores y la publicación de nuevos vehículos se encuentran bloqueados hasta que el titular de la concesionaria abone el servicio mensual o canjee un código de membresía.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+            <button
+              onClick={() => setActiveTab('subscription')}
+              className="px-4 py-2.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 justify-center w-full md:w-auto"
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>Abonar Plan / Ver Medios de Cobro</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Metrics Row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -430,13 +502,16 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
           }`}
         >
           <CreditCard className="w-4 h-4" />
-          <span>Mi Suscripción</span>
+          <span>Planes & Medios de Pago</span>
         </button>
       </div>
 
       {/* TAB 1: INVENTORY & SALON */}
       {activeTab === 'inventory' && (
         <div className="space-y-4">
+          {/* Quick Interactive Upload Tutorial Banner */}
+          <UploadTutorialBanner onStartUpload={() => onOpenCarForm()} />
+
           {/* Filter & Search Bar */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3 text-xs shadow-sm">
             <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
@@ -950,241 +1025,544 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
         </div>
       )}
 
-      {/* TAB 5: SUBSCRIPTION & PAYMENT METHODS (PARAGUAY) */}
+      {/* TAB 5: SUBSCRIPTION, PLANS & PAYMENT METHODS (PARAGUAY) */}
       {activeTab === 'subscription' && (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-8 animate-fadeIn">
           {/* Header Banner */}
-          <div className="p-5 rounded-3xl bg-gradient-to-r from-blue-900 to-indigo-900 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-md">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-0.5 rounded-full bg-blue-500/30 text-blue-200 text-xs font-bold border border-blue-400/30">
-                  Plan Activo de Concesionaria
+          <div className="p-6 rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-lg border border-blue-800/40">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-400/30 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Estado: {currentAgency.subscriptionStatus === 'active' ? 'Membresía Activa' : 'Período de Prueba'}</span>
                 </span>
-                <span className="text-xs text-blue-200">
-                  Vigente hasta: <strong className="text-white">{currentAgency.subscriptionExpiresAt || '2027-01-01'}</strong>
+                <span className="text-xs text-blue-200 bg-white/10 px-3 py-1 rounded-full border border-white/10">
+                  Vigencia: <strong className="text-white">{currentAgency.subscriptionExpiresAt || '2027-01-01'}</strong>
+                </span>
+                <span className="text-xs text-blue-200 bg-white/10 px-3 py-1 rounded-full border border-white/10">
+                  Capacidad: <strong className="text-white">{agencyCars.length} / {maxCarsAllowed}</strong> autos cargados
                 </span>
               </div>
-              <h2 className="text-2xl font-black mt-1 text-white">{agencyPlan.name}</h2>
-              <p className="text-xs text-blue-100/80 mt-0.5 max-w-xl">
+              <h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
+                <span>{agencyPlan.name}</span>
+                <span className="text-sm font-semibold px-2.5 py-0.5 rounded-lg bg-blue-500/30 text-blue-200 border border-blue-400/30">
+                  Tu Plan Actual
+                </span>
+              </h2>
+              <p className="text-xs sm:text-sm text-blue-100/80 max-w-2xl leading-relaxed">
                 {agencyPlan.description}
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
               {onOpenRedeemCode && (
                 <button
                   onClick={onOpenRedeemCode}
-                  className="px-5 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-black text-xs shadow-lg flex items-center gap-2 transition-transform active:scale-95"
+                  className="px-4 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs shadow-md flex items-center gap-2 transition-transform active:scale-95"
                 >
-                  <KeyRound className="w-4 h-4 text-slate-900" />
-                  <span>Canjear Código de Suscripción</span>
+                  <KeyRound className="w-4 h-4 text-slate-950" />
+                  <span>Canjear Código</span>
                 </button>
               )}
+
+              <a
+                href={`https://wa.me/595975635770?text=${encodeURIComponent(
+                  `¡Hola Administración MiCarro! 👋 Adjunto el comprobante de pago de la membresía para la concesionaria *${currentAgency.name}* (RUC: ${currentAgency.cuitOrTaxId || 'Consultar'}) correspondiente al plan *${agencyPlan.name}*.`
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md flex items-center gap-2 transition-transform active:scale-95 whitespace-nowrap"
+              >
+                <MessageCircle className="w-4 h-4 fill-white" />
+                <span>Notificar Pago</span>
+              </a>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Column 1: Plan Quota & Features */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-blue-600" />
-                  <span>Detalles de tu Membresía</span>
+          {/* SECCIÓN 1: PLANES Y TARIFAS OFICIALES (SOLO LECTURA) */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 text-[11px] font-bold border border-blue-200">
+                    Tarifario Oficial MiCarro
+                  </span>
+                  <span className="text-xs text-slate-400 flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-slate-400" /> Solo Lectura
+                  </span>
+                </div>
+                <h3 className="text-lg md:text-xl font-bold text-slate-900 mt-1">
+                  Planes de Suscripción & Tarifas
                 </h3>
-                <span className="text-xs font-bold text-blue-700 font-mono">
-                  {formatPrice(agencyPlan.monthlyPrice, agencyPlan.currency)} / mes
-                </span>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Conoce las opciones disponibles para escalar tu agencia. Todos los valores están fijados por la administración oficial.
+                </p>
               </div>
 
-              <div className="space-y-3 text-xs">
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                  <span className="text-slate-600">Capacidad de Salón:</span>
-                  <span className="font-bold text-slate-900">{maxCarsAllowed} vehículos simultáneos</span>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                  <span className="text-slate-600">Fotos por Vehículo:</span>
-                  <span className="font-bold text-slate-900">Hasta {agencyPlan.maxPhotosPerCar} fotos HD</span>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                  <span className="text-slate-600">Cupos Destacados en Portada:</span>
-                  <span className="font-bold text-blue-700">{agencyPlan.featuredSlots} cupos</span>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                  <span className="text-slate-600">Redacción con Inteligencia Artificial:</span>
-                  <span className="font-bold text-emerald-700">Habilitado</span>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                  <span className="text-slate-600">Acceso a Ofertas de Particulares:</span>
-                  <span className="font-bold text-emerald-700">Incluido</span>
-                </div>
-              </div>
-
-              {onOpenRedeemCode && (
+              {/* Cycle Toggle: Monthly / Yearly */}
+              <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 self-start md:self-auto">
                 <button
-                  onClick={onOpenRedeemCode}
-                  className="w-full py-3 rounded-2xl bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold text-xs border border-blue-200 flex items-center justify-center gap-2 transition-colors"
+                  type="button"
+                  onClick={() => setPlansCycleView('monthly')}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    plansCycleView === 'monthly'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
                 >
-                  <KeyRound className="w-4 h-4 text-blue-600" />
-                  <span>¿Tienes un código de suscripción? Canjearlo aquí</span>
+                  Mensual
                 </button>
-              )}
-
-              <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] space-y-1">
-                <p className="font-bold flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                  <span>Seguridad de Planes & Facturación SaaS</span>
-                </p>
-                <p className="text-amber-800/90 leading-relaxed">
-                  La configuración de precios de los planes y el control maestro de facturación se administran de forma segura exclusivamente desde el Panel de Administración Master.
-                </p>
                 <button
-                  onClick={onGoToSaasAdmin}
-                  className="inline-flex items-center gap-1 font-bold text-blue-800 hover:underline pt-1 text-xs"
+                  type="button"
+                  onClick={() => setPlansCycleView('yearly')}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                    plansCycleView === 'yearly'
+                      ? 'bg-blue-700 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
                 >
-                  <span>Ir al Acceso de Administrador Master</span>
-                  <ChevronRight className="w-3 h-3" />
+                  <span>Anual</span>
+                  <span className="px-1.5 py-0.2 rounded-md bg-emerald-500 text-white text-[10px] font-extrabold uppercase">
+                    2 Meses Gratis
+                  </span>
                 </button>
               </div>
             </div>
 
-            {/* Column 2 & 3: Payment Methods Available in Paraguay */}
-            <div className="lg:col-span-2 bg-white border border-slate-200 rounded-3xl p-6 space-y-5 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                <div>
-                  <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-emerald-600" />
-                    <span>Medios de Pago Habilitados en Paraguay</span>
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Canales autorizados para abonar o renovar tu membresía de software MiCarro.
-                  </p>
-                </div>
+            {/* Plans Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {subscriptionPlans.map((plan) => {
+                const isCurrent = plan.id === currentAgency.subscriptionPlanId || plan.id === agencyPlan.id;
+                const formatted = formatPlanPrice(plan, plansCycleView);
 
-                <button
-                  onClick={() => {
-                    const text = `🏦 DATOS DE PAGO MICARRO PARAGUAY:\n\n• Transferencia SIPAP 24/7:\n  Banco: Banco Itaú Paraguay / Continental / Ueno Bank\n  Cta Cte Gs: 72019482\n  Cta USD: 83019482\n  Alias SIPAP: MICARRO.PY\n  RUC: 80099432-1\n  Titular: MiCarro Software Paraguay S.A.\n\n• Tarjetas: Aceptamos Visa, Mastercard, Panal, Cabal (Bancard / Vpos)\n• Efectivo en Sede: Av. Santa Teresa y Aviadores del Chaco, Asunción`;
-                    navigator.clipboard.writeText(text);
-                    setCopiedPaymentText(true);
-                    setTimeout(() => setCopiedPaymentText(false), 3000);
-                  }}
-                  className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors self-start sm:self-auto"
-                >
-                  {copiedPaymentText ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      <span className="text-emerald-700 font-bold">¡Datos Copiados!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Copiar Todos los Datos</span>
-                    </>
-                  )}
-                </button>
-              </div>
+                return (
+                  <div
+                    key={plan.id}
+                    className={`rounded-3xl p-6 flex flex-col justify-between transition-all duration-300 relative ${
+                      isCurrent
+                        ? 'bg-blue-50/50 border-2 border-blue-600 shadow-md ring-4 ring-blue-100'
+                        : plan.isRecommended
+                        ? 'bg-white border-2 border-amber-300 shadow-sm'
+                        : 'bg-white border border-slate-200 hover:border-slate-300 shadow-sm'
+                    }`}
+                  >
+                    {/* Top Badges */}
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      {isCurrent ? (
+                        <span className="px-3 py-1 rounded-full bg-blue-700 text-white text-[11px] font-bold shadow-sm flex items-center gap-1">
+                          <Check className="w-3 h-3 stroke-[3]" /> Tu Plan Actual
+                        </span>
+                      ) : plan.isRecommended ? (
+                        <span className="px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[11px] font-bold shadow-sm flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-current" /> Recomendado
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-semibold">
+                          Plan Oficial
+                        </span>
+                      )}
 
-              {/* Grid of Paraguayan Payment Gateways */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {paymentGateways
-                  .filter((gw) => gw.isEnabled)
-                  .map((gw) => (
-                    <div
-                      key={gw.id}
-                      className="p-4 rounded-2xl bg-slate-50 border border-slate-200 hover:border-blue-300 transition-all space-y-3 flex flex-col justify-between"
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                            {gw.type === 'bank_transfer'
-                              ? 'Transferencia SIPAP'
-                              : gw.type === 'card'
-                              ? 'Tarjetas (Bancard)'
-                              : gw.type === 'cash'
-                              ? 'Efectivo en Sede'
-                              : 'Billetera Digital'}
-                          </span>
-                          <span className="text-[10px] text-slate-500 font-mono">Paraguay</span>
-                        </div>
+                      <span className="text-[11px] text-slate-400 font-medium">
+                        Hasta {plan.maxCars} autos
+                      </span>
+                    </div>
 
-                        <h4 className="font-bold text-slate-900 text-sm">{gw.name}</h4>
-
-                        {gw.bankName && (
-                          <div className="text-xs text-slate-700 space-y-1 bg-white p-2.5 rounded-xl border border-slate-200">
-                            <p><strong>Banco:</strong> {gw.bankName}</p>
-                            {gw.accountHolder && <p><strong>Titular:</strong> {gw.accountHolder}</p>}
-                            {gw.cuitOrTaxId && <p><strong>RUC:</strong> {gw.cuitOrTaxId}</p>}
-                            {gw.accountNumber && <p className="font-mono text-blue-900"><strong>{gw.accountNumber}</strong></p>}
-                            {gw.cbuOrAlias && <p className="font-mono text-emerald-800 font-bold"><strong>{gw.cbuOrAlias}</strong></p>}
-                          </div>
-                        )}
-
-                        {gw.locationOrOffice && (
-                          <div className="text-xs text-slate-700 space-y-1 bg-white p-2.5 rounded-xl border border-slate-200">
-                            <p className="flex items-center gap-1">
-                              <MapPin className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                              <span>{gw.locationOrOffice}</span>
-                            </p>
-                            {gw.currencyAccepted && (
-                              <p className="text-[11px] text-slate-600"><strong>Acepta:</strong> {gw.currencyAccepted}</p>
-                            )}
-                          </div>
-                        )}
-
-                        {gw.paymentLink && (
-                          <div className="pt-1">
-                            <a
-                              href={gw.paymentLink}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs"
-                            >
-                              <CreditCard className="w-3.5 h-3.5" />
-                              <span>Pagar con Tarjeta Online</span>
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          </div>
-                        )}
-
-                        {gw.instructions && (
-                          <p className="text-[11px] text-slate-600 leading-relaxed italic">
-                            {gw.instructions}
-                          </p>
-                        )}
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-lg font-black text-slate-900">{plan.name}</h4>
+                        <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                          {plan.description}
+                        </p>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
-                        <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Acreditación Inmediata
-                        </span>
+                      {/* Pricing Box (USD & Guaraníes) */}
+                      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-2xl font-black text-slate-900 font-mono">
+                            {formatted.usd}
+                          </span>
+                          <span className="text-xs font-semibold text-slate-500">
+                            / {plansCycleView === 'yearly' ? 'año' : 'mes'}
+                          </span>
+                        </div>
+                        <div className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 flex items-center justify-between font-mono">
+                          <span>Equivalente en Guaraníes:</span>
+                          <span className="font-extrabold">{formatted.pyg}</span>
+                        </div>
+                      </div>
+
+                      {/* Features List */}
+                      <div className="space-y-2.5 text-xs text-slate-700 pt-2 border-t border-slate-100">
+                        <div className="flex items-center gap-2 font-medium">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span><strong>{plan.maxCars} autos</strong> en salón simultáneo</span>
+                        </div>
+                        <div className="flex items-center gap-2 font-medium">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Hasta <strong>{plan.maxPhotosPerCar} fotos HD</strong> por auto</span>
+                        </div>
+                        <div className="flex items-center gap-2 font-medium">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span><strong>{plan.featuredSlots} cupos destacados</strong> en portada</span>
+                        </div>
+                        <div className="flex items-center gap-2 font-medium">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Contacto directo WhatsApp de vendedores</span>
+                        </div>
+                        <div className="flex items-center gap-2 font-medium">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Acceso a ofertas de particulares (Toma de usados)</span>
+                        </div>
+                        <div className="flex items-center gap-2 font-medium">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Redacción de fichas con Inteligencia Artificial</span>
+                        </div>
+                        {plan.customWatermark && (
+                          <div className="flex items-center gap-2 font-medium">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>Marca de agua con logo de la agencia</span>
+                          </div>
+                        )}
+                        {plan.prioritySupport && (
+                          <div className="flex items-center gap-2 font-medium">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>Soporte prioritario VIP 24/7</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ))}
+
+                    {/* Bottom Action Button */}
+                    <div className="pt-6 mt-4 border-t border-slate-100">
+                      {isCurrent ? (
+                        <div className="w-full py-2.5 rounded-xl bg-blue-100 text-blue-800 font-bold text-xs text-center border border-blue-200">
+                          ✓ Plan Actualmente Contratado
+                        </div>
+                      ) : (
+                        <a
+                          href={`https://wa.me/595975635770?text=${encodeURIComponent(
+                            `¡Hola Administración MiCarro! 👋 Desde la concesionaria *${currentAgency.name}* (RUC: ${currentAgency.cuitOrTaxId || 'Consultar'}) queremos solicitar el cambio/ascenso al *${plan.name}* (${formatted.usd} / ${formatted.pyg}).`
+                          )}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-blue-700 text-white font-bold text-xs text-center flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                        >
+                          <span>Solicitar Cambio a este Plan</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* SECCIÓN 2: MEDIOS DE PAGO & DATOS BANCARIOS FIJOS */}
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
+                    🇵🇾 Canales Oficiales
+                  </span>
+                  <span className="text-xs text-slate-500">Acreditación Directa</span>
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mt-1">
+                  Medios de Pago Habilitados & Datos Bancarios Fijos
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Utiliza los siguientes datos fijos para realizar tus transferencias bancarias o abonos presenciales sin comisiones extra.
+                </p>
               </div>
 
-              {/* Notify Payment WhatsApp Callout */}
-              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div className="space-y-0.5">
-                  <h4 className="font-bold text-emerald-900 text-sm flex items-center gap-1.5">
-                    <MessageCircle className="w-4 h-4 text-emerald-600" />
-                    <span>¿Realizaste una transferencia bancaria o pago en efectivo?</span>
-                  </h4>
-                  <p className="text-emerald-800 text-xs">
-                    Envíanos el comprobante por WhatsApp para activar o extender tu plan al instante.
-                  </p>
+              <button
+                type="button"
+                onClick={() => {
+                  const text = `🏦 DATOS BANCARIOS FIJOS - MICARRO:\n\n• Transferencia Bancaria Directa (CBU / Alias):\n  Banco: Banco Itau\n  Titular: Camila Ayelen Torres\n  RUC: 7.226.273-7\n  N° de Cuenta: 620011158\n  Alias / CBU: 7226273\n\n• WhatsApp Comprobantes: +595 975 635 770\n• Instrucciones: Enviar comprobante por WhatsApp al +595 975 635 770 con el número de factura para habilitación inmediata.`;
+                  navigator.clipboard.writeText(text);
+                  setCopiedPaymentText(true);
+                  setTimeout(() => setCopiedPaymentText(false), 3000);
+                }}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-2 transition-colors self-start sm:self-auto border border-slate-200"
+              >
+                {copiedPaymentText ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
+                    <span className="text-emerald-700 font-bold">¡Datos Copiados al Portapapeles!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 text-slate-600" />
+                    <span>Copiar Todos los Datos Bancarios</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Prominent Fixed Bank Transfer Box */}
+            <div className="bg-white border-2 border-emerald-500/40 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
+
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-800">
+                    <Building2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase tracking-wide">
+                      Canal Principal Recomendado
+                    </span>
+                    <h4 className="text-lg font-black text-slate-900 mt-0.5">
+                      Transferencia Bancaria Directa (CBU / Alias)
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      Enviar comprobante por WhatsApp al +595 975 635 770 con el número de factura para habilitación inmediata.
+                    </p>
+                  </div>
                 </div>
 
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 self-start md:self-auto flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Acreditación Inmediata
+                </span>
+              </div>
+
+              {/* Grid of Fixed Bank Fields with Quick-Copy Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                {/* Banco */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Banco(s) en Paraguay</span>
+                  <p className="text-base font-bold text-slate-900 mt-1">Banco Itau</p>
+                </div>
+
+                {/* Titular */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Titular de la Cuenta</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText('Camila Ayelen Torres', 'titular')}
+                      className="text-blue-700 hover:text-blue-900 font-bold text-[11px] inline-flex items-center gap-1"
+                    >
+                      {copiedField === 'titular' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedField === 'titular' ? 'Copiado' : 'Copiar'}</span>
+                    </button>
+                  </div>
+                  <p className="text-base font-bold text-slate-900 mt-1">Camila Ayelen Torres</p>
+                </div>
+
+                {/* RUC */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">RUC / Identificación Fiscal</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText('7.226.273-7', 'ruc')}
+                      className="text-blue-700 hover:text-blue-900 font-bold text-[11px] inline-flex items-center gap-1"
+                    >
+                      {copiedField === 'ruc' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedField === 'ruc' ? 'Copiado' : 'Copiar'}</span>
+                    </button>
+                  </div>
+                  <p className="text-base font-black text-slate-900 font-mono mt-1">7.226.273-7</p>
+                </div>
+
+                {/* N° de Cuenta */}
+                <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider">N° de Cuentas (Gs. / USD)</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText('620011158', 'cta')}
+                      className="text-emerald-800 hover:text-emerald-950 font-bold text-[11px] inline-flex items-center gap-1"
+                    >
+                      {copiedField === 'cta' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedField === 'cta' ? '¡Copiado!' : 'Copiar N°'}</span>
+                    </button>
+                  </div>
+                  <p className="text-lg font-black text-emerald-950 font-mono mt-1">620011158</p>
+                </div>
+
+                {/* Alias SIPAP / CBU */}
+                <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-200 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-purple-900 uppercase tracking-wider">Alias SIPAP / CBU</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText('7226273', 'alias')}
+                      className="text-purple-800 hover:text-purple-950 font-bold text-[11px] inline-flex items-center gap-1"
+                    >
+                      {copiedField === 'alias' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedField === 'alias' ? '¡Copiado!' : 'Copiar Alias'}</span>
+                    </button>
+                  </div>
+                  <p className="text-lg font-black text-purple-950 font-mono mt-1">7226273</p>
+                </div>
+
+                {/* WhatsApp de Envío de Comprobante */}
+                <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-200 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-blue-900 uppercase tracking-wider">WhatsApp de Pagos</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText('+595 975 635 770', 'whatsapp')}
+                      className="text-blue-800 hover:text-blue-950 font-bold text-[11px] inline-flex items-center gap-1"
+                    >
+                      {copiedField === 'whatsapp' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedField === 'whatsapp' ? '¡Copiado!' : 'Copiar Tel'}</span>
+                    </button>
+                  </div>
+                  <p className="text-sm font-black text-blue-950 font-mono mt-1">+595 975 635 770</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Other Payment Gateways Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {paymentGateways
+                .filter((gw) => gw.isEnabled && gw.type !== 'bank_transfer')
+                .map((gw) => (
+                  <div
+                    key={gw.id}
+                    className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm flex flex-col justify-between"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800">
+                          {gw.type === 'card'
+                            ? 'Mercado Pago (Checkout Pro & QR)'
+                            : gw.type === 'cash'
+                            ? 'Cobro Presencial en Sede'
+                            : 'Billetera Digital'}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">Oficial</span>
+                      </div>
+
+                      <h4 className="font-bold text-slate-900 text-sm">{gw.name}</h4>
+
+                      {gw.locationOrOffice && (
+                        <div className="text-xs text-slate-700 space-y-1 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                          <p className="flex items-start gap-1.5 font-medium">
+                            <MapPin className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                            <span>{gw.locationOrOffice}</span>
+                          </p>
+                          {gw.currencyAccepted && (
+                            <p className="text-[11px] text-slate-500"><strong>Monedas:</strong> {gw.currencyAccepted}</p>
+                          )}
+                          <p className="text-[11px] text-slate-500"><strong>Horario:</strong> Lunes a Viernes 08:30 a 18:00 hs</p>
+                        </div>
+                      )}
+
+                      {gw.accountNumber && gw.type === 'billetera' && (
+                        <div className="text-xs text-slate-700 space-y-1 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-slate-600">Línea de Giros:</span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyText('+595 975 635 770', 'billetera')}
+                              className="text-blue-700 hover:text-blue-900 font-bold text-[11px] inline-flex items-center gap-1"
+                            >
+                              {copiedField === 'billetera' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                              <span>{copiedField === 'billetera' ? 'Copiado' : 'Copiar'}</span>
+                            </button>
+                          </div>
+                          <p className="font-mono text-slate-900 font-black text-sm">{gw.accountNumber}</p>
+                          {gw.accountHolder && <p className="text-[11px] text-slate-500">Titular: {gw.accountHolder}</p>}
+                        </div>
+                      )}
+
+                      {gw.paymentLink && (
+                        <div className="pt-1">
+                          <a
+                            href={gw.paymentLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs transition-colors shadow-sm"
+                          >
+                            <CreditCard className="w-3.5 h-3.5" />
+                            <span>Pagar con Mercado Pago</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      )}
+
+                      {gw.instructions && (
+                        <p className="text-[11px] text-slate-600 leading-relaxed italic">
+                          {gw.instructions}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Aceptación Garantizada
+                      </span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          {/* SECCIÓN 3: NOTIFICACIÓN DE PAGO & CONTACTO DIRECTO */}
+          <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-6 border border-emerald-700/40">
+            <div className="space-y-2 max-w-2xl">
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 text-xs font-bold border border-emerald-400/30">
+                  Activación Rápida
+                </span>
+                <span className="text-xs text-emerald-200">Facturación con Timbrado Oficial</span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+                <MessageCircle className="w-6 h-6 text-emerald-400" />
+                <span>¿Realizaste tu transferencia o pago? Envíanos tu comprobante</span>
+              </h3>
+              <p className="text-xs sm:text-sm text-emerald-100/80 leading-relaxed">
+                Adjunta la captura o comprobante bancario por WhatsApp al <strong>+595 975 635 770</strong> con el número de factura para habilitación inmediata.
+              </p>
+
+              {/* Direct Contact Numbers & Email */}
+              <div className="pt-2 flex flex-wrap items-center gap-4 text-xs text-emerald-200 font-medium">
                 <a
-                  href={`https://wa.me/595981489055?text=${encodeURIComponent(
-                    `¡Hola Administración MiCarro! 👋 Adjunto el comprobante de pago de la membresía para la concesionaria *${currentAgency.name}* (RUC: ${currentAgency.cuitOrTaxId || 'Consultar'}) para el plan *${agencyPlan.name}*.`
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm whitespace-nowrap self-start sm:self-auto"
+                  href="tel:+595975635770"
+                  className="flex items-center gap-1.5 hover:text-white bg-white/10 px-3 py-1.5 rounded-xl transition-colors"
                 >
-                  <MessageCircle className="w-4 h-4 fill-white" />
-                  <span>Notificar Pago por WhatsApp</span>
+                  <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>WhatsApp / Tel: <strong>+595 975 635 770</strong></span>
+                </a>
+                <a
+                  href="mailto:mecanicadakar@gmail.com"
+                  className="flex items-center gap-1.5 hover:text-white bg-white/10 px-3 py-1.5 rounded-xl transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Email: <strong>mecanicadakar@gmail.com</strong></span>
                 </a>
               </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
+              <a
+                href={`https://wa.me/595975635770?text=${encodeURIComponent(
+                  `¡Hola Administración MiCarro! 👋 Adjunto el comprobante de pago de la membresía para la concesionaria *${currentAgency.name}* (RUC: ${currentAgency.cuitOrTaxId || 'Consultar'}) para el plan *${agencyPlan.name}*.`
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-6 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm shadow-lg flex items-center justify-center gap-2.5 transition-transform active:scale-95"
+              >
+                <MessageCircle className="w-5 h-5 fill-slate-950" />
+                <span>Enviar Comprobante por WhatsApp</span>
+              </a>
+
+              {onOpenRedeemCode && (
+                <button
+                  type="button"
+                  onClick={onOpenRedeemCode}
+                  className="px-5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors border border-white/20"
+                >
+                  <KeyRound className="w-4 h-4 text-amber-400" />
+                  <span>Canjear Código de Suscripción</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

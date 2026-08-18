@@ -20,6 +20,8 @@ import {
   Share2,
   ChevronRight,
   Zap,
+  GitCompare,
+  Check,
 } from 'lucide-react';
 
 interface CatalogViewProps {
@@ -63,6 +65,9 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
     formatPrice,
     openWhatsappForCar,
     setSelectedCar,
+    comparedCarIds,
+    toggleCompareCar,
+    setIsCompareModalOpen,
   } = useApp();
 
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
@@ -137,49 +142,50 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Hero Showcase Banner in Light Mode with Subtle Car Background Image */}
-      <div className="relative rounded-3xl overflow-hidden bg-slate-900 border border-blue-900/20 p-6 sm:p-10 shadow-xl text-white">
-        {/* Background Car Image (Subtle & Elegant) */}
-        <div className="absolute inset-0 z-0 pointer-events-none select-none">
+      <div className="relative rounded-3xl overflow-hidden bg-slate-950 border border-sky-400/20 p-6 sm:p-10 shadow-2xl text-white">
+        {/* Background Sports Car Image (Crisp, striking, and prominent with celeste/cyan highlights) */}
+        <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden">
           <img
-            src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1600&auto=format&fit=crop&q=80"
-            alt="Fondo automóvil deportivo"
+            src="https://images.unsplash.com/photo-1617788138017-80ad40651399?w=1600&auto=format&fit=crop&q=85"
+            alt="Fondo automóvil deportivo MiCarro"
             referrerPolicy="no-referrer"
-            className="w-full h-full object-cover object-center sm:object-right opacity-25 scale-105 filter saturate-150 contrast-125"
+            className="w-full h-full object-cover object-right-bottom sm:object-right opacity-60 scale-100 filter brightness-105 contrast-110 saturate-125 transition-opacity duration-700"
           />
-          {/* Gradient Overlays for maximum legibility and depth */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-950 via-blue-900/90 to-indigo-950/70"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-blue-900/30"></div>
+          {/* Subtle directional gradients for supreme legibility while keeping the car vividly visible */}
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 sm:via-slate-950/70 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-sky-950/40"></div>
         </div>
 
-        {/* Ambient glow effect */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20 z-0"></div>
+        {/* Ambient celeste & cyan glow effects */}
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-sky-500/15 rounded-full blur-3xl pointer-events-none -mt-20 z-0"></div>
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl pointer-events-none z-0"></div>
 
         <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-amber-300 text-xs font-bold mb-4 backdrop-blur-sm shadow-sm">
-            <Sparkles className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/30 text-sky-200 text-xs font-bold mb-4 backdrop-blur-md shadow-sm">
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
             <span>Red Oficial de Concesionarias & Vehículos Garantizados</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight mb-3 drop-shadow-sm">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight mb-3 drop-shadow-md">
             Encontrá tu próximo auto con <span className="text-amber-300">trato directo</span>
           </h1>
-          <p className="text-sm sm:text-base text-blue-100/90 mb-6 leading-relaxed">
-            Explorá el catálogo de agencias verificadas, consultá al instante por <strong className="text-emerald-300">WhatsApp</strong> con el vendedor y cotizá tu permuta o financiación al instante.
+          <p className="text-sm sm:text-base text-sky-100/90 mb-6 leading-relaxed drop-shadow-sm max-w-xl">
+            Explorá el catálogo de agencias verificadas, compará especificaciones, consultá al instante por <strong className="text-emerald-300">WhatsApp</strong> con el vendedor y cotizá tu permuta o financiación.
           </p>
 
           <div className="flex flex-wrap gap-3">
             <button
               onClick={handleSellCar}
-              className="px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm shadow-md shadow-amber-400/30 flex items-center gap-2 transition-transform active:scale-98"
+              className="px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-amber-400/25 flex items-center gap-2 transition-transform active:scale-98"
             >
               <span>Vender o Entregar Mi Auto en Agencia</span>
               <ChevronRight className="w-4 h-4 stroke-[3]" />
             </button>
             <button
               onClick={handleAgencyPanel}
-              className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm border border-white/20 flex items-center gap-2 backdrop-blur-sm transition-colors"
+              className="px-5 py-3 rounded-xl bg-sky-950/60 hover:bg-sky-900/80 text-white font-bold text-xs sm:text-sm border border-sky-300/30 flex items-center gap-2 backdrop-blur-md transition-colors shadow-md"
             >
-              <Building2 className="w-4 h-4 text-amber-300" />
+              <Building2 className="w-4 h-4 text-sky-300" />
               <span>Portal para Vendedores y Agencias</span>
             </button>
           </div>
@@ -394,7 +400,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                   />
 
                   {/* Photo Badges */}
-                  <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                  <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
                     {car.isFeatured && (
                       <span className="px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[10px] tracking-wide flex items-center gap-1 shadow-sm">
                         <Sparkles className="w-3 h-3" />
@@ -418,6 +424,28 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                       </span>
                     )}
                   </div>
+
+                  {/* Quick Compare Button on Card */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleCompareCar(car.id);
+                    }}
+                    className={`absolute top-3 right-3 z-10 p-2 rounded-xl backdrop-blur-md transition-all shadow-md flex items-center gap-1 text-[11px] font-bold ${
+                      comparedCarIds.includes(car.id)
+                        ? 'bg-blue-600 text-white ring-2 ring-white'
+                        : 'bg-slate-900/70 hover:bg-slate-900 text-white'
+                    }`}
+                    title={comparedCarIds.includes(car.id) ? 'Quitar de la comparativa' : 'Comparar con otros vehículos (hasta 3)'}
+                  >
+                    <GitCompare className="w-3.5 h-3.5" />
+                    {comparedCarIds.includes(car.id) ? (
+                      <span className="hidden sm:inline">Comparando</span>
+                    ) : (
+                      <span className="hidden sm:inline">Comparar</span>
+                    )}
+                  </button>
 
                   {/* Multi-Photo Indicator */}
                   {hasMultiplePhotos && (
@@ -524,6 +552,38 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Floating Comparison Bar (when cars are selected) */}
+      {comparedCarIds.length > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-11/12 max-w-xl bg-slate-950/95 text-white border border-sky-400/30 rounded-2xl p-3 sm:p-4 shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-sky-500 text-slate-950 flex items-center justify-center font-black">
+              <GitCompare className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm font-black text-white">Comparativa Activa</span>
+                <span className="px-2 py-0.5 rounded-full bg-sky-400/20 text-sky-300 text-[10px] font-bold font-mono border border-sky-400/30">
+                  {comparedCarIds.length} / 3 vehículos
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 hidden sm:block">
+                Compará especificaciones técnicas, precios y equipamiento
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsCompareModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 font-black text-xs shadow-md shadow-sky-400/20 transition-all flex items-center gap-1.5 active:scale-98"
+            >
+              <span>Ver Comparativa</span>
+              <ChevronRight className="w-3.5 h-3.5 stroke-[3]" />
+            </button>
+          </div>
         </div>
       )}
     </div>

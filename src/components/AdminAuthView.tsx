@@ -16,7 +16,7 @@ export const AdminAuthView: React.FC<AdminAuthViewProps> = ({ onSuccess }) => {
   } = useApp();
 
   const [adminEmail, setAdminEmail] = useState('mecanicadakar@gmail.com');
-  const [pin, setPin] = useState('2026');
+  const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -175,28 +175,15 @@ export const AdminAuthView: React.FC<AdminAuthViewProps> = ({ onSuccess }) => {
           </button>
         </form>
 
-        {/* Secondary Actions: Email OTP verification alternative & Quick Demo */}
-        <div className="mt-8 pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        {/* Secondary Action: Email OTP verification alternative */}
+        <div className="mt-8 pt-6 border-t border-slate-200 flex items-center justify-center">
           <button
             type="button"
             onClick={handle2FAEmailFlow}
-            className="text-blue-700 hover:text-blue-900 font-bold flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors"
+            className="text-blue-700 hover:text-blue-900 font-bold text-xs flex items-center gap-2 py-2 px-4 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors border border-blue-200/60 shadow-sm"
           >
-            <Mail className="w-4 h-4" />
-            <span>Validar con Código por Email (OTP)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setAdminEmail('mecanicadakar@gmail.com');
-              setPin('2026');
-              unlockAdminDirectly();
-            }}
-            className="text-slate-600 hover:text-slate-900 font-medium flex items-center gap-1 transition-colors"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>Demo: <strong>mecanicadakar@gmail.com</strong> (PIN: 2026)</span>
+            <Mail className="w-4 h-4 text-blue-600" />
+            <span>¿Olvidaste tu PIN o deseas validar con Código por Email (OTP)?</span>
           </button>
         </div>
       </div>
