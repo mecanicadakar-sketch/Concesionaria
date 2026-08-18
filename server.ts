@@ -363,6 +363,115 @@ Genera una respuesta en JSON:
   }
 });
 
+// 4. Resend.com Email OTP Delivery Service for Admin Security
+app.post("/api/auth/send-otp", async (req, res) => {
+  try {
+    const {
+      email = "mecanicadakar@gmail.com",
+      code,
+      purposeTitle = "Acceso Administrador Seguro",
+      customApiKey,
+    } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ success: false, error: "El código de seguridad es requerido." });
+    }
+
+    const resendApiKey = process.env.RESEND_API_KEY || customApiKey;
+
+    const emailSubject = `🔑 ${code} es tu clave de verificación de Administrador - MiCarro`;
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Código de Seguridad - MiCarro</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 24px;">
+        <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+          <div style="background-color: #1d4ed8; padding: 24px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">🚗 MiCarro SaaS</h1>
+            <p style="color: #bfdbfe; margin: 4px 0 0 0; font-size: 12px;">Seguridad y Control de Acceso</p>
+          </div>
+          <div style="padding: 32px 24px; text-align: center;">
+            <p style="font-size: 14px; color: #475569; margin: 0 0 16px 0;">Has solicitado verificar tu identidad para:</p>
+            <div style="display: inline-block; background-color: #eff6ff; color: #1e40af; font-size: 13px; font-weight: 700; padding: 6px 16px; border-radius: 9999px; margin-bottom: 24px; border: 1px solid #dbeafe;">
+              ${purposeTitle}
+            </div>
+            <p style="font-size: 13px; color: #64748b; margin: 0 0 8px 0;">Tu código de verificación de un solo uso (OTP) es:</p>
+            <div style="background-color: #f8fafc; border: 2px dashed #93c5fd; border-radius: 16px; padding: 18px 24px; margin: 16px 0 24px 0;">
+              <span style="font-family: 'Courier New', Courier, monospace; font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #1e3a8a; display: block;">
+                ${code}
+              </span>
+            </div>
+            <p style="font-size: 12px; color: #94a3b8; margin: 0; line-height: 1.5;">
+              ⏱️ Este código expira en <strong>5 minutos</strong> y solo puede utilizarse una única vez.<br>
+              Si no realizaste esta solicitud, puedes ignorar este correo de forma segura.
+            </p>
+          </div>
+          <div style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px; text-align: center;">
+            <p style="margin: 0; font-size: 11px; color: #94a3b8;">
+              © ${new Date().getFullYear()} MiCarro Platform • Sistema de Gestión de Concesionarias
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    if (resendApiKey && resendApiKey.startsWith("re_")) {
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "MiCarro Seguridad <onboarding@resend.dev>",
+          to: [email],
+          subject: emailSubject,
+          html: emailHtml,
+        }),
+      });
+
+      const data: any = await response.json();
+
+      if (response.ok) {
+        return res.json({
+          success: true,
+          delivered: true,
+          emailId: data.id,
+          message: `Código enviado con éxito a ${email} vía Resend.`,
+        });
+      } else {
+        console.warn("[Resend API Error]:", data);
+        return res.json({
+          success: true,
+          delivered: false,
+          resendError: data?.message || "Error al conectar con Resend",
+          message: `Código generado. (Resend API reportó: ${data?.message || 'verifica tu clave'}).`,
+        });
+      }
+    }
+
+    // Fallback if no API key is configured yet in environment
+    return res.json({
+      success: true,
+      delivered: false,
+      message: `Código [${code}] generado localmente. Para envío directo a tu bandeja de entrada, añade tu RESEND_API_KEY.`,
+    });
+  } catch (err: any) {
+    console.error("Error in /api/auth/send-otp:", err);
+    return res.json({
+      success: true,
+      delivered: false,
+      error: err.message,
+      message: "Código generado para validación en pantalla.",
+    });
+  }
+});
+
 // Vite & Static file serving
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
