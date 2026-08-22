@@ -474,6 +474,9 @@ app.post("/api/auth/send-otp", async (req, res) => {
 
 // Vite & Static file serving
 async function startServer() {
+  // Explicitly serve public assets (favicon, logo, icons)
+  app.use(express.static(path.join(process.cwd(), "public")));
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -489,7 +492,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`AutoYa Server running on http://localhost:${PORT}`);
+    console.log(`MiCarro Server running on http://localhost:${PORT}`);
   });
 }
 
