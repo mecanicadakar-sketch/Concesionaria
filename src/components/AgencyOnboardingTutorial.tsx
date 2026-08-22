@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Sparkles,
@@ -134,133 +135,141 @@ export const AgencyOnboardingTutorial: React.FC<AgencyOnboardingTutorialProps> =
         <span className="font-bold">Guía de Uso</span>
       </button>
 
-      {/* Modal Dialog */}
-      <AnimatePresence>
-        {isOpen && (
-          <div
-            id="modal-agency-onboarding"
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ duration: 0.2 }}
-              className="relative w-full max-w-xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
-            >
-              {/* Top Banner Accent */}
-              <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-500 to-amber-500" />
-
-              {/* Close Button */}
-              <button
-                id="btn-close-agency-tutorial"
-                onClick={handleClose}
-                className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                aria-label="Cerrar guía"
+      {/* Modal Dialog rendered in React Portal to avoid stacking context collisions */}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <AnimatePresence>
+            {isOpen && (
+              <div
+                id="modal-agency-onboarding"
+                className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-slate-950/85 backdrop-blur-md"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) handleClose();
+                }}
               >
-                <X className="w-5 h-5" />
-              </button>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                  transition={{ duration: 0.2 }}
+                  className="relative w-full max-w-xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-[10000]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Top Banner Accent */}
+                  <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 via-indigo-500 to-amber-500" />
 
-              {/* Modal Body */}
-              <div className="p-6 sm:p-8 space-y-6">
-                {/* Header with Icon and Step indicator */}
-                <div className="flex items-start gap-4">
-                  <div
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center border shadow-sm flex-shrink-0 ${stepData.iconColor}`}
-                  >
-                    <IconComponent className="w-6 h-6" />
-                  </div>
-                  <div className="flex-1 pr-6">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                        Paso {currentStep + 1} de {steps.length}
-                      </span>
-                    </div>
-                    <h2 className="text-xl font-bold text-white tracking-tight">{stepData.title}</h2>
-                    <p className="text-xs text-slate-400 font-medium mt-0.5">{stepData.subtitle}</p>
-                  </div>
-                </div>
-
-                {/* Step Content */}
-                <div className="space-y-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80">
-                  <p className="text-sm text-slate-300 leading-relaxed">{stepData.description}</p>
-
-                  <div className="space-y-2 pt-2 border-t border-slate-800/60">
-                    {stepData.bulletPoints.map((point, idx) => (
-                      <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-300">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                        <span>{point}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Progress Indicators */}
-                <div className="flex items-center justify-center gap-2 pt-1">
-                  {steps.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setCurrentStep(idx)}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                        idx === currentStep
-                          ? 'w-8 bg-blue-500'
-                          : idx < currentStep
-                          ? 'w-3 bg-blue-700/60'
-                          : 'w-2 bg-slate-800'
-                      }`}
-                      aria-label={`Ir al paso ${idx + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Modal Footer Controls */}
-              <div className="px-6 py-4 bg-slate-950/90 border-t border-slate-800/80 flex items-center justify-between gap-3">
-                {currentStep > 0 ? (
+                  {/* Close Button */}
                   <button
-                    id="btn-tutorial-prev"
-                    onClick={() => setCurrentStep((prev) => prev - 1)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Anterior</span>
-                  </button>
-                ) : (
-                  <button
-                    id="btn-tutorial-skip"
+                    id="btn-close-agency-tutorial"
                     onClick={handleClose}
-                    className="text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors px-2 py-2"
+                    className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                    aria-label="Cerrar guía"
                   >
-                    Omitir tutorial
+                    <X className="w-5 h-5" />
                   </button>
-                )}
 
-                <div className="flex items-center gap-2">
-                  {stepData.isFinal ? (
-                    <button
-                      id="btn-tutorial-publish-first-car"
-                      onClick={handleLaunchCarModal}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/25 transition-all transform active:scale-95"
-                    >
-                      <PlusCircle className="w-4 h-4" />
-                      <span>{stepData.actionLabel}</span>
-                    </button>
-                  ) : (
-                    <button
-                      id="btn-tutorial-next"
-                      onClick={() => setCurrentStep((prev) => prev + 1)}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 transition-all shadow-md shadow-blue-600/20"
-                    >
-                      <span>{stepData.actionLabel}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+                  {/* Modal Body */}
+                  <div className="p-6 sm:p-8 space-y-6">
+                    {/* Header with Icon and Step indicator */}
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center border shadow-sm flex-shrink-0 ${stepData.iconColor}`}
+                      >
+                        <IconComponent className="w-6 h-6" />
+                      </div>
+                      <div className="flex-1 pr-6">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                            Paso {currentStep + 1} de {steps.length}
+                          </span>
+                        </div>
+                        <h2 className="text-xl font-bold text-white tracking-tight">{stepData.title}</h2>
+                        <p className="text-xs text-slate-400 font-medium mt-0.5">{stepData.subtitle}</p>
+                      </div>
+                    </div>
+
+                    {/* Step Content */}
+                    <div className="space-y-4 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+                      <p className="text-sm text-slate-200 leading-relaxed">{stepData.description}</p>
+
+                      <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                        {stepData.bulletPoints.map((point, idx) => (
+                          <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-300">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                            <span>{point}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Progress Indicators */}
+                    <div className="flex items-center justify-center gap-2 pt-1">
+                      {steps.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentStep(idx)}
+                          className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                            idx === currentStep
+                              ? 'w-8 bg-blue-500'
+                              : idx < currentStep
+                              ? 'w-3 bg-blue-700/60'
+                              : 'w-2 bg-slate-800'
+                          }`}
+                          aria-label={`Ir al paso ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Modal Footer Controls */}
+                  <div className="px-6 py-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between gap-3">
+                    {currentStep > 0 ? (
+                      <button
+                        id="btn-tutorial-prev"
+                        onClick={() => setCurrentStep((prev) => prev - 1)}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Anterior</span>
+                      </button>
+                    ) : (
+                      <button
+                        id="btn-tutorial-skip"
+                        onClick={handleClose}
+                        className="text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors px-2 py-2 cursor-pointer"
+                      >
+                        Omitir tutorial
+                      </button>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                      {stepData.isFinal ? (
+                        <button
+                          id="btn-tutorial-publish-first-car"
+                          onClick={handleLaunchCarModal}
+                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/25 transition-all transform active:scale-95 cursor-pointer"
+                        >
+                          <PlusCircle className="w-4 h-4" />
+                          <span>{stepData.actionLabel}</span>
+                        </button>
+                      ) : (
+                        <button
+                          id="btn-tutorial-next"
+                          onClick={() => setCurrentStep((prev) => prev + 1)}
+                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 transition-all shadow-md shadow-blue-600/20 cursor-pointer"
+                        >
+                          <span>{stepData.actionLabel}</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
               </div>
-            </motion.div>
-          </div>
+            )}
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
     </>
   );
 };

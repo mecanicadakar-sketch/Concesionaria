@@ -4,7 +4,7 @@ import { CarListing, BodyType, CarCondition } from '../types';
 import { CarQuotePdfModal } from './CarQuotePdfModal';
 import { CarBrandStrip } from './CarBrandIcons';
 import { getAllBrands, getModelsForBrand } from '../data/carBrandsData';
-import micarroLogo from '../assets/images/logo.png';
+import { BrandLogo } from './BrandLogo';
 import {
   Search,
   Filter,
@@ -258,11 +258,9 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 via-sky-400 to-amber-400 rounded-full blur-2xl opacity-40 group-hover:opacity-70 transition duration-700 pointer-events-none"></div>
               
               <div className="relative w-48 h-48 lg:w-56 lg:h-56 flex flex-col items-center justify-center">
-                <img
-                  src={micarroLogo}
-                  alt="Logo Oficial MiCarro"
-                  className="w-full h-full object-contain filter drop-shadow-2xl group-hover:scale-105 transition-transform duration-300"
-                  referrerPolicy="no-referrer"
+                <BrandLogo
+                  size="xl"
+                  className="w-44 h-44 lg:w-52 lg:h-52 group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
 

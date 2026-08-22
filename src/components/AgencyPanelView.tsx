@@ -56,6 +56,7 @@ import { AgencyNotificationPanel } from './AgencyNotificationPanel';
 import { AgencyStatsView } from './AgencyStatsView';
 import { AgencyOnboardingTutorial } from './AgencyOnboardingTutorial';
 import { AgencyWhatsAppSettings } from './AgencyWhatsAppSettings';
+import { AgencyLogo } from './AgencyLogo';
 
 interface AgencyPanelViewProps {
   onOpenCarForm: (car?: CarListing) => void;
@@ -399,13 +400,12 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
           {/* Agency & Seller Profile Info */}
           <div className="flex items-start sm:items-center gap-4 sm:gap-5">
             <div className="relative group shrink-0">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-                <img
-                  src={currentAgency.logoUrl}
-                  alt={currentAgency.name}
-                  className="w-full h-full object-contain filter drop-shadow-2xl"
-                />
-              </div>
+              <AgencyLogo
+                logoUrl={currentAgency.logoUrl}
+                name={currentAgency.name}
+                size="xl"
+                className="transition-transform duration-300 group-hover:scale-105"
+              />
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 flex-wrap">

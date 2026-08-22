@@ -34,6 +34,7 @@ import {
   Save,
   Check,
 } from 'lucide-react';
+import { AgencyLogo } from './AgencyLogo';
 
 interface CarQuotePdfModalProps {
   car: CarListing | null;
@@ -891,14 +892,11 @@ ${agency.name} • ${agency.address}, ${agency.city}`;
               {/* Proforma Header */}
               <div className="flex items-start justify-between border-b-2 border-slate-900 pb-4">
                 <div className="flex items-center gap-3.5">
-                  <div className="w-16 h-16 flex items-center justify-center shrink-0">
-                    <img
-                      src={companyLogo || agency.logoUrl}
-                      alt={companyName || agency.name}
-                      className="w-full h-full object-contain"
-                      crossOrigin="anonymous"
-                    />
-                  </div>
+                  <AgencyLogo
+                    logoUrl={companyLogo || agency.logoUrl}
+                    name={companyName || agency.name}
+                    size="lg"
+                  />
                   <div>
                     <h1 className="text-lg font-black text-slate-950 tracking-tight">{companyName || agency.name}</h1>
                     <p className="text-[11px] text-slate-600 font-medium">

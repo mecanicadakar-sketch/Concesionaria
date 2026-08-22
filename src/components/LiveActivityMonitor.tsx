@@ -23,6 +23,7 @@ import {
   Flame,
   ShieldCheck,
 } from 'lucide-react';
+import { AgencyLogo } from './AgencyLogo';
 
 interface ActivityLogItem {
   id: string;
@@ -420,10 +421,10 @@ export const LiveActivityMonitor: React.FC = () => {
                     <tr key={agency.id} className="hover:bg-slate-50 transition-colors">
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-2.5">
-                          <img
-                            src={agency.logoUrl}
-                            alt={agency.name}
-                            className="w-8 h-8 object-contain shrink-0 filter drop-shadow-xs"
+                          <AgencyLogo
+                            logoUrl={agency.logoUrl}
+                            name={agency.name}
+                            size="sm"
                           />
                           <div>
                             <span className="font-bold text-slate-900 block">{agency.name}</span>

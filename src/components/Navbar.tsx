@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import micarroLogo from '../assets/images/logo.png';
+import { BrandLogo } from './BrandLogo';
+import { AgencyLogo } from './AgencyLogo';
 import {
   Car,
   Building2,
@@ -156,10 +157,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCarForm, onOpenSettings, o
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <img
-                        src={agency.logoUrl}
-                        alt={agency.name}
-                        className="w-5 h-5 object-contain shrink-0 filter drop-shadow-xs"
+                      <AgencyLogo
+                        logoUrl={agency.logoUrl}
+                        name={agency.name}
+                        size="xs"
                       />
                       <span className="truncate">{agency.name}</span>
                     </div>
@@ -273,14 +274,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCarForm, onOpenSettings, o
             title="Volver al inicio de la página"
             className="flex items-center gap-3 text-left group cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 rounded-2xl p-1.5 -m-1.5 hover:bg-slate-50 transition-all active:scale-98"
           >
-            <div className="w-10 h-10 sm:w-11 sm:h-11 overflow-hidden group-hover:scale-105 group-active:scale-95 transition-transform flex items-center justify-center shrink-0">
-              <img
-                src={micarroLogo}
-                alt="Logo MiCarro"
-                className="w-full h-full object-contain filter drop-shadow-sm"
-                referrerPolicy="no-referrer"
-              />
-            </div>
+            <BrandLogo size="md" className="group-hover:scale-105 group-active:scale-95 transition-transform" />
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-xl font-black text-slate-900 tracking-tight group-hover:text-blue-700 transition-colors">

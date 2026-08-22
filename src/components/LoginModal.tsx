@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { AppUser } from '../types';
-import micarroLogo from '../assets/images/logo.png';
+import { BrandLogo } from './BrandLogo';
 import {
   User,
   Lock,
@@ -165,14 +165,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 overflow-hidden flex items-center justify-center shrink-0">
-              <img
-                src={micarroLogo}
-                alt="Logo MiCarro"
-                className="w-full h-full object-contain filter drop-shadow-sm"
-                referrerPolicy="no-referrer"
-              />
-            </div>
+            <BrandLogo size="md" />
             <div>
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 Portal de Acceso para Vendedores
