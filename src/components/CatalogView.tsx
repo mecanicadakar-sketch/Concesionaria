@@ -251,23 +251,57 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
             </div>
           </div>
 
-          {/* Right-side Official MiCarro Mascot/Logo Badge */}
-          <div className="hidden md:flex flex-col items-center justify-center shrink-0 self-center lg:self-center">
+          {/* Right-side Official MiCarro Verified Network Showcase Card */}
+          <div className="hidden lg:flex flex-col items-center justify-center shrink-0 self-center">
             <div className="relative group">
               {/* Outer decorative halo glow */}
-              <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 via-sky-400 to-amber-400 rounded-full blur-2xl opacity-40 group-hover:opacity-70 transition duration-700 pointer-events-none"></div>
+              <div className="absolute -inset-2 bg-gradient-to-r from-blue-600/40 via-sky-400/30 to-amber-400/30 rounded-3xl blur-xl opacity-60 group-hover:opacity-90 transition duration-700 pointer-events-none"></div>
               
-              <div className="relative w-48 h-48 lg:w-56 lg:h-56 flex flex-col items-center justify-center">
-                <BrandLogo
-                  size="xl"
-                  className="w-44 h-44 lg:w-52 lg:h-52 group-hover:scale-105 transition-transform duration-300"
-                />
-              </div>
+              <div className="relative w-64 bg-slate-900/80 backdrop-blur-md border border-sky-400/30 rounded-3xl p-5 shadow-2xl space-y-4">
+                {/* Header with Emblem */}
+                <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
+                  <BrandLogo size="md" className="shrink-0" />
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-black text-sm text-white tracking-tight">MiCarro</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/30">OFICIAL</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400">Red Multiconcesionaria</p>
+                  </div>
+                </div>
 
-              {/* Status pill badge */}
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap px-3.5 py-1 rounded-full bg-slate-900/90 border border-sky-400/40 shadow-lg text-[11px] font-bold text-sky-200 flex items-center gap-1.5 backdrop-blur-md">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Plataforma Oficial</span>
+                {/* Key Pillars */}
+                <div className="space-y-2.5 text-xs">
+                  <div className="flex items-center gap-2.5 text-slate-200">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="font-semibold text-[11px]">Agencias 100% Verificadas</span>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 text-slate-200">
+                    <div className="w-6 h-6 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0 border border-sky-500/30">
+                      <MessageCircle className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="font-semibold text-[11px]">Contacto Directo WhatsApp</span>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 text-slate-200">
+                    <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="font-semibold text-[11px]">0km y Usados Garantizados</span>
+                  </div>
+                </div>
+
+                {/* Footer Pill */}
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-sky-300/90 font-mono">
+                  <span>Trato transparente</span>
+                  <span className="flex items-center gap-1 text-emerald-400 font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    En Línea
+                  </span>
+                </div>
               </div>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrandLogo } from './BrandLogo';
+import defaultLogo from '../assets/images/logo.png';
 
 interface AgencyLogoProps {
   logoUrl?: string;
@@ -30,15 +30,6 @@ export const AgencyLogo: React.FC<AgencyLogoProps> = ({
     '2xl': 'w-32 h-32',
   };
 
-  const brandSizeMap: Record<string, 'sm' | 'md' | 'lg' | 'xl'> = {
-    xs: 'sm',
-    sm: 'sm',
-    md: 'md',
-    lg: 'lg',
-    xl: 'xl',
-    '2xl': 'xl',
-  };
-
   const hasCustomLogo = Boolean(
     logoUrl &&
     logoUrl.trim() !== '' &&
@@ -49,23 +40,17 @@ export const AgencyLogo: React.FC<AgencyLogoProps> = ({
 
   return (
     <div
-      className={`relative flex items-center justify-center rounded-2xl overflow-hidden shrink-0 select-none bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 border border-sky-400/30 shadow-lg ${sizeClasses[size]} ${className}`}
+      className={`relative flex items-center justify-center shrink-0 select-none ${sizeClasses[size]} ${className}`}
     >
-      {hasCustomLogo ? (
-        <img
-          src={logoUrl}
-          alt={name}
-          onError={() => setImgError(true)}
-          className="w-full h-full object-contain p-1.5 filter drop-shadow-md"
-          referrerPolicy="no-referrer"
-        />
-      ) : (
-        <BrandLogo
-          size={brandSizeMap[size] || 'md'}
-          className="w-full h-full p-1"
-        />
-      )}
+      <img
+        src={hasCustomLogo && logoUrl ? logoUrl : defaultLogo}
+        alt={name || 'Logo MiCarro'}
+        onError={() => setImgError(true)}
+        className="w-full h-full object-contain filter drop-shadow-sm select-none"
+        referrerPolicy="no-referrer"
+      />
     </div>
   );
 };
+
 
