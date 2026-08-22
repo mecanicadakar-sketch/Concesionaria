@@ -408,26 +408,12 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           {/* Agency & Seller Profile Info */}
           <div className="flex items-start sm:items-center gap-4 sm:gap-5">
-            <div className="relative group shrink-0">
+            <div className="relative shrink-0">
               <AgencyLogo
                 logoUrl={currentAgency.logoUrl}
                 name={currentAgency.name}
                 size="xl"
-                className="transition-transform duration-300 group-hover:scale-105"
               />
-              <label
-                title="Cambiar Logo de la Agencia"
-                className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-opacity text-white text-[10px] font-bold gap-1 backdrop-blur-xs border border-white/30"
-              >
-                <Camera className="w-5 h-5 text-sky-300" />
-                <span className="text-center px-1 leading-tight">Cambiar Logo</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleCompanyLogoUpload}
-                  className="hidden"
-                />
-              </label>
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 flex-wrap">
