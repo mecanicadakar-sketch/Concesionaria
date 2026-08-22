@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import defaultLogo from '../assets/images/logo.png';
+import { MICARRO_LOGO_BASE64 } from '../assets/logoData';
 
 interface AgencyLogoProps {
   logoUrl?: string;
@@ -43,7 +43,7 @@ export const AgencyLogo: React.FC<AgencyLogoProps> = ({
       className={`relative flex items-center justify-center shrink-0 select-none ${sizeClasses[size]} ${className}`}
     >
       <img
-        src={hasCustomLogo && logoUrl ? logoUrl : defaultLogo}
+        src={hasCustomLogo && logoUrl ? logoUrl : MICARRO_LOGO_BASE64}
         alt={name || 'Logo MiCarro'}
         onError={() => setImgError(true)}
         className="w-full h-full object-contain filter drop-shadow-sm select-none"

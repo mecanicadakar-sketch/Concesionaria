@@ -2146,14 +2146,11 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
 
                   {/* Logo Preview */}
                   <div className="flex flex-col items-center p-5 bg-slate-50/80 rounded-3xl border border-slate-200/80 text-center">
-                    <div className="w-28 h-28 sm:w-36 sm:h-36 mb-3 flex items-center justify-center">
-                      <img
-                        src={companyLogo || '/logo.png'}
-                        alt="Logo de la Agencia"
-                        className="w-full h-full object-contain filter drop-shadow-md"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/logo.png';
-                        }}
+                    <div className="mb-3 flex items-center justify-center">
+                      <AgencyLogo
+                        logoUrl={companyLogo}
+                        name={companyName || currentAgency.name}
+                        size="2xl"
                       />
                     </div>
                     <span className="font-bold text-slate-900 text-sm">{companyName || currentAgency.name}</span>

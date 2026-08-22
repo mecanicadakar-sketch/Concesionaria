@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import micarroLogo from '../assets/images/logo.png';
+import React from 'react';
+import { MICARRO_LOGO_BASE64 } from '../assets/logoData';
 
 interface BrandLogoProps {
   className?: string;
@@ -14,8 +14,6 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   variant = 'icon-only',
   customLogoUrl,
 }) => {
-  const [imageError, setImageError] = useState(false);
-
   const sizeClasses = {
     sm: 'w-8 h-8',
     md: 'w-10 h-10',
@@ -23,14 +21,13 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
     xl: 'w-24 h-24 sm:w-28 sm:h-28',
   };
 
-  const activeSrc = customLogoUrl && customLogoUrl.trim() !== '' ? customLogoUrl : micarroLogo;
+  const activeSrc = customLogoUrl && customLogoUrl.trim() !== '' ? customLogoUrl : MICARRO_LOGO_BASE64;
 
   return (
     <div className={`relative flex items-center justify-center shrink-0 ${sizeClasses[size]} ${className}`}>
       <img
-        src={imageError ? micarroLogo : activeSrc}
+        src={activeSrc}
         alt="MiCarro Logo"
-        onError={() => setImageError(true)}
         className="w-full h-full object-contain select-none filter drop-shadow-sm"
         referrerPolicy="no-referrer"
       />
