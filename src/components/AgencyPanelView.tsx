@@ -40,8 +40,10 @@ import {
   Lightbulb,
   Upload,
   ImageIcon,
+  Camera,
   Save,
   Globe,
+  Bot,
   Landmark,
   FileSpreadsheet,
   Bell,
@@ -166,6 +168,7 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
     currentAgency?.about || 'Concesionaria líder en venta de vehículos seleccionados, 0km y usados garantizados.'
   );
   const [companySavedAlert, setCompanySavedAlert] = useState(false);
+  const [showWelcomeGuide, setShowWelcomeGuide] = useState(true);
 
   // Sync form states when currentAgency updates
   useEffect(() => {
@@ -200,11 +203,17 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
   // Handle Logo Upload from device
   const handleCompanyLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (file && currentAgency) {
       const reader = new FileReader();
       reader.onload = () => {
         if (typeof reader.result === 'string') {
-          setCompanyLogo(reader.result);
+          const logoData = reader.result;
+          setCompanyLogo(logoData);
+          updateAgency(currentAgency.id, {
+            logoUrl: logoData,
+          });
+          setCompanySavedAlert(true);
+          setTimeout(() => setCompanySavedAlert(false), 4000);
         }
       };
       reader.readAsDataURL(file);
@@ -406,6 +415,19 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
                 size="xl"
                 className="transition-transform duration-300 group-hover:scale-105"
               />
+              <label
+                title="Cambiar Logo de la Agencia"
+                className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-opacity text-white text-[10px] font-bold gap-1 backdrop-blur-xs border border-white/30"
+              >
+                <Camera className="w-5 h-5 text-sky-300" />
+                <span className="text-center px-1 leading-tight">Cambiar Logo</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCompanyLogoUpload}
+                  className="hidden"
+                />
+              </label>
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 flex-wrap">
@@ -585,6 +607,104 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
               <CreditCard className="w-4 h-4" />
               <span>Abonar Plan / Ver Medios de Cobro</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Prominent Welcome & Quick Guide Card */}
+      {showWelcomeGuide && (
+        <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-sky-950 border-2 border-sky-500/40 rounded-3xl p-5 sm:p-6 shadow-xl text-white">
+          <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="flex items-start justify-between gap-4 relative z-10">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 flex items-center justify-center font-black text-xl shrink-0 shadow-lg shadow-amber-500/20">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                    Guía de Inicio Rápido
+                  </span>
+                  <span className="text-xs text-sky-300 font-medium">3 Pasos Clave</span>
+                </div>
+                <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
+                  ¡Bienvenido al Panel de Control de {currentAgency.name}!
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
+                  Sigue estos 3 pasos para poner en marcha tu salón de ventas y comenzar a recibir consultas directas por WhatsApp:
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowWelcomeGuide(false)}
+              className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors shrink-0 cursor-pointer"
+              title="Ocultar bienvenida"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* 3 Step Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mt-5 relative z-10">
+            <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 space-y-2 hover:border-sky-500/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="w-7 h-7 rounded-xl bg-blue-500/20 text-blue-400 font-black text-xs flex items-center justify-center border border-blue-500/30">
+                  1
+                </span>
+                <Plus className="w-4 h-4 text-blue-400" />
+              </div>
+              <h3 className="text-sm font-bold text-white">1. Cargar Auto al Salón</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Pulsa el botón amarillo <strong>"+ Cargar Nuevo Auto"</strong> para ingresar marca, modelo, precio, año y kilometraje de la unidad.
+              </p>
+            </div>
+
+            <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 space-y-2 hover:border-indigo-500/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="w-7 h-7 rounded-xl bg-indigo-500/20 text-indigo-400 font-black text-xs flex items-center justify-center border border-indigo-500/30">
+                  2
+                </span>
+                <Bot className="w-4 h-4 text-indigo-400" />
+              </div>
+              <h3 className="text-sm font-bold text-white">2. Fotos y Redacción con IA</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Sube fotos del vehículo y haz clic en <strong>"Generar con IA"</strong> para redactar una descripción vendedora al instante.
+              </p>
+            </div>
+
+            <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 space-y-2 hover:border-emerald-500/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 font-black text-xs flex items-center justify-center border border-emerald-500/30">
+                  3
+                </span>
+                <MessageCircle className="w-4 h-4 text-emerald-400" />
+              </div>
+              <h3 className="text-sm font-bold text-white">3. Cotizaciones y WhatsApp</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Genera fichas técnicas en PDF con tu membrete oficial y recibe consultas de compradores directo a tu WhatsApp.
+              </p>
+            </div>
+          </div>
+
+          {/* Action Row */}
+          <div className="mt-5 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 relative z-10">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const btn = document.getElementById('btn-reopen-agency-tutorial');
+                  if (btn) btn.click();
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                <Lightbulb className="w-4 h-4" />
+                <span>Iniciar Tour Interactivo Paso a Paso</span>
+              </button>
+            </div>
+
+            <p className="text-xs text-sky-200/80">
+              💡 Puedes volver a abrir esta guía en cualquier momento pulsando <strong>"Guía de Uso"</strong> en el encabezado.
+            </p>
           </div>
         </div>
       )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Building2, Car, Shield } from 'lucide-react';
 import defaultLogo from '../assets/images/logo.png';
 
@@ -16,6 +16,11 @@ export const AgencyLogo: React.FC<AgencyLogoProps> = ({
   size = 'md',
 }) => {
   const [imgError, setImgError] = useState(false);
+
+  // When the logoUrl or agency changes, reset error state so the new logo displays immediately
+  useEffect(() => {
+    setImgError(false);
+  }, [logoUrl]);
 
   const sizeClasses = {
     xs: 'w-5 h-5 text-[10px]',
@@ -36,7 +41,7 @@ export const AgencyLogo: React.FC<AgencyLogoProps> = ({
   };
 
   // Determine the actual image source to render
-  const resolvedSrc = !logoUrl || logoUrl === '/logo.png' ? defaultLogo : logoUrl;
+  const resolvedSrc = !logoUrl || logoUrl.trim() === '' || logoUrl === '/logo.png' ? defaultLogo : logoUrl;
 
   return (
     <div

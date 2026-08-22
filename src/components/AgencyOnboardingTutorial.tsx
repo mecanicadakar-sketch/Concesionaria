@@ -18,7 +18,7 @@ interface AgencyOnboardingTutorialProps {
   agencyName: string;
 }
 
-const STORAGE_TUTORIAL_KEY = 'micarro_agency_onboarding_completed_v1';
+const STORAGE_TUTORIAL_KEY = 'micarro_agency_onboarding_session_seen';
 
 export const AgencyOnboardingTutorial: React.FC<AgencyOnboardingTutorialProps> = ({
   onOpenNewCarModal,
@@ -29,23 +29,23 @@ export const AgencyOnboardingTutorial: React.FC<AgencyOnboardingTutorialProps> =
 
   useEffect(() => {
     try {
-      const isCompleted = localStorage.getItem(STORAGE_TUTORIAL_KEY);
+      const isCompleted = sessionStorage.getItem(STORAGE_TUTORIAL_KEY);
       if (!isCompleted) {
-        // Automatically open for first time agency visitors after a short delay
+        // Automatically open for agency visitors after a short delay
         const timer = setTimeout(() => {
           setIsOpen(true);
-        }, 800);
+        }, 600);
         return () => clearTimeout(timer);
       }
     } catch {
-      // LocalStorage error fallback
+      // SessionStorage error fallback
     }
   }, []);
 
   const handleClose = () => {
     setIsOpen(false);
     try {
-      localStorage.setItem(STORAGE_TUTORIAL_KEY, 'true');
+      sessionStorage.setItem(STORAGE_TUTORIAL_KEY, 'true');
     } catch {
       // ignore
     }
@@ -142,7 +142,7 @@ export const AgencyOnboardingTutorial: React.FC<AgencyOnboardingTutorialProps> =
             {isOpen && (
               <div
                 id="modal-agency-onboarding"
-                className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-slate-950/85 backdrop-blur-md"
+                className="fixed inset-0 z-[999999] flex items-center justify-center p-4 sm:p-6 bg-slate-950/90 backdrop-blur-md"
                 onClick={(e) => {
                   if (e.target === e.currentTarget) handleClose();
                 }}
@@ -152,7 +152,7 @@ export const AgencyOnboardingTutorial: React.FC<AgencyOnboardingTutorialProps> =
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 15 }}
                   transition={{ duration: 0.2 }}
-                  className="relative w-full max-w-xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-[10000]"
+                  className="relative w-full max-w-xl bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden flex flex-col z-[1000000]"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Top Banner Accent */}
