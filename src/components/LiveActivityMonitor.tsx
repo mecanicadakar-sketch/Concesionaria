@@ -423,7 +423,7 @@ export const LiveActivityMonitor: React.FC = () => {
                           <img
                             src={agency.logoUrl}
                             alt={agency.name}
-                            className="w-8 h-8 rounded-xl object-cover border border-slate-200 shrink-0"
+                            className="w-8 h-8 object-contain shrink-0 filter drop-shadow-xs"
                           />
                           <div>
                             <span className="font-bold text-slate-900 block">{agency.name}</span>

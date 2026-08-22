@@ -45,7 +45,7 @@ export const SubscriptionCodesManager: React.FC = () => {
     codePrefix: 'MICARRO',
     planId: subscriptionPlans[1]?.id || 'plan-pro',
     targetAgencyId: '',
-    targetEmail: 'mecanicadakar@gmail.com',
+    targetEmail: 'contacto@agenciademo.com',
     durationMonths: 12,
     discountPercentage: 100,
     notes: 'Código de bonificación exclusiva para concesionaria',
@@ -112,7 +112,7 @@ export const SubscriptionCodesManager: React.FC = () => {
       durationMonths: Number(newCodeData.durationMonths),
       discountPercentage: Number(newCodeData.discountPercentage),
       expiresAt: codeExpires.toISOString(),
-      createdByEmail: 'mecanicadakar@gmail.com',
+      createdByEmail: 'admin@micarro.com',
       notes: newCodeData.notes,
     };
 

@@ -131,6 +131,7 @@ interface AppContextType {
     plan: SubscriptionPlan,
     cycle?: 'monthly' | 'yearly'
   ) => { usd: string; pyg: string; combined: string; monthlyUsd: number; monthlyPyg: number };
+  formatWhatsappTemplate: (template: string, car: CarListing) => string;
   generateWhatsappLink: (car: CarListing, customText?: string) => string;
   openWhatsappForCar: (car: CarListing, customText?: string) => void;
 
@@ -142,7 +143,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'micarro_platform_db_v2';
+const STORAGE_KEY = 'micarro_platform_db_v6';
 
 const INITIAL_FILTERS: AppFilterState = {
   search: '',
@@ -181,13 +182,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
-    const savedUser = localStorage.getItem('micarro_current_user_v2');
+    const savedUser = localStorage.getItem('micarro_current_user_v5');
     if (savedUser) {
       try {
         return JSON.parse(savedUser);
       } catch {}
     }
-    // Default to Juan Perez (Vendedor) so the user experiences the seller dashboard immediately
+    // Default to Juan Perez (Vendedor Demo) so the user experiences the seller dashboard immediately
     return INITIAL_USERS[0];
   });
 
@@ -197,7 +198,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.agencies && parsed.agencies.length > 0) return parsed.agencies;
+        if (parsed.agencies && parsed.agencies.length > 0) {
+          return parsed.agencies.map((ag: Agency) => {
+            if (ag.logoUrl && ag.logoUrl.includes('1599305445671-ac291c95aaa9')) {
+              return { ...ag, logoUrl: '/logo.png' };
+            }
+            return ag;
+          });
+        }
       } catch {}
     }
     return INITIAL_AGENCIES;
@@ -207,7 +215,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (currentUser && currentUser.agencyId && currentUser.agencyId !== 'all') {
       return currentUser.agencyId;
     }
-    return INITIAL_AGENCIES[0]?.id || 'agency-dakar';
+    return INITIAL_AGENCIES[0]?.id || 'agency-demo';
   });
 
   const [carListings, setCarListings] = useState<CarListing[]>(() => {
@@ -403,12 +411,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Sync current user
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('micarro_current_user_v2', JSON.stringify(currentUser));
+      localStorage.setItem('micarro_current_user_v5', JSON.stringify(currentUser));
       if (currentUser.agencyId && currentUser.agencyId !== 'all') {
         setCurrentAgencyId(currentUser.agencyId);
       }
     } else {
-      localStorage.removeItem('micarro_current_user_v2');
+      localStorage.removeItem('micarro_current_user_v5');
     }
   }, [currentUser]);
 
@@ -596,13 +604,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  // Helper to replace template tags with car and agency details
+  const formatWhatsappTemplate = (template: string, car: CarListing): string => {
+    if (!template) return '';
+    const sellerGreeting = car.sellerName ? ` (Atención: ${car.sellerName})` : '';
+    const originUrl = typeof window !== 'undefined' ? window.location.origin : 'https://micarro.app';
+    const carUrl = `${originUrl}/?car=${car.id}`;
+    const priceFormatted = `${car.currency} ${car.price.toLocaleString('es-ES')}`;
+
+    return template
+      .replace(/{agencia}/gi, car.agencyName || 'la concesionaria')
+      .replace(/{auto}/gi, `${car.make} ${car.model}`)
+      .replace(/{marca}/gi, car.make)
+      .replace(/{modelo}/gi, car.model)
+      .replace(/{version}/gi, car.version || `${car.make} ${car.model}`)
+      .replace(/{año}/gi, String(car.year))
+      .replace(/{anio}/gi, String(car.year))
+      .replace(/{precio}/gi, priceFormatted)
+      .replace(/{moneda}/gi, car.currency)
+      .replace(/{codigo}/gi, car.id)
+      .replace(/{id}/gi, car.id)
+      .replace(/{km}/gi, `${car.mileage.toLocaleString('es-ES')} km`)
+      .replace(/{kilometraje}/gi, `${car.mileage.toLocaleString('es-ES')} km`)
+      .replace(/{transmision}/gi, car.transmission || '')
+      .replace(/{combustible}/gi, car.fuelType || '')
+      .replace(/{vendedor}/gi, sellerGreeting)
+      .replace(/{vendedor_nombre}/gi, car.sellerName || 'Ventas')
+      .replace(/{ciudad}/gi, car.agencyCity || '')
+      .replace(/{link}/gi, carUrl)
+      .replace(/{url}/gi, carUrl);
+  };
+
   // WhatsApp Link Generator
   const generateWhatsappLink = (car: CarListing, customText?: string): string => {
-    const phone = (car.sellerWhatsapp || car.agencyWhatsapp || '5491148905500').replace(/[^0-9]/g, '');
-    const sellerGreeting = car.sellerName ? ` (Atención: ${car.sellerName})` : '';
-    const message =
-      customText ||
-      `¡Hola ${car.agencyName}${sellerGreeting}! 👋 Vi en MiCarro su publicación del *${car.make} ${car.model}* (${car.year} - ${car.currency} ${car.price.toLocaleString('es-ES')}) con código *#${car.id}*. ¿Sigue disponible para coordinar una visita y conocer facilidades de pago o permuta?`;
+    const agency = agencies.find((a) => a.id === car.agencyId) || currentAgency;
+    // Prefer seller phone if assigned, then agency WhatsApp Business number, then agency whatsappNumber, then car.agencyWhatsapp
+    const rawPhone =
+      car.sellerWhatsapp ||
+      agency?.whatsappBusinessNumber ||
+      agency?.whatsappNumber ||
+      car.agencyWhatsapp ||
+      '5491148905500';
+    const phone = rawPhone.replace(/[^0-9]/g, '');
+
+    let message = '';
+    if (customText) {
+      message = customText;
+    } else if (agency?.whatsappCarInquiryTemplate) {
+      message = formatWhatsappTemplate(agency.whatsappCarInquiryTemplate, car);
+    } else {
+      const sellerGreeting = car.sellerName ? ` (Atención: ${car.sellerName})` : '';
+      message = `¡Hola ${car.agencyName}${sellerGreeting}! 👋 Vi en MiCarro su publicación del *${car.make} ${car.model}* (${car.year} - ${car.currency} ${car.price.toLocaleString('es-ES')}) con código *#${car.id}*. ¿Sigue disponible para coordinar una visita y conocer facilidades de pago o permuta?`;
+    }
 
     return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   };
@@ -1196,6 +1249,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         exchangeRateUsdToPyg,
         formatPrice,
         formatPlanPrice,
+        formatWhatsappTemplate,
         generateWhatsappLink,
         openWhatsappForCar,
         exportDatabaseJson,

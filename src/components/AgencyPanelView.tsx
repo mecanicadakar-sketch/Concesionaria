@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { CarListing, PrivateCarOffer, AgencyInvoice, AppUser } from '../types';
 import {
@@ -38,8 +38,24 @@ import {
   Copy,
   Check,
   Lightbulb,
+  Upload,
+  ImageIcon,
+  Save,
+  Globe,
+  Landmark,
+  FileSpreadsheet,
+  Bell,
+  BellRing,
+  BarChart3,
 } from 'lucide-react';
 import { UploadTutorialBanner } from './UploadTutorialBanner';
+import { CarQuotePdfModal } from './CarQuotePdfModal';
+import { CarBrandStrip } from './CarBrandIcons';
+import { getAllBrands, getModelsForBrand } from '../data/carBrandsData';
+import { AgencyNotificationPanel } from './AgencyNotificationPanel';
+import { AgencyStatsView } from './AgencyStatsView';
+import { AgencyOnboardingTutorial } from './AgencyOnboardingTutorial';
+import { AgencyWhatsAppSettings } from './AgencyWhatsAppSettings';
 
 interface AgencyPanelViewProps {
   onOpenCarForm: (car?: CarListing) => void;
@@ -57,6 +73,7 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
   const {
     currentAgency,
     agencies,
+    updateAgency,
     carListings,
     deleteCarListing,
     toggleCarFeatured,
@@ -81,11 +98,24 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
     setIsAuthModalOpen,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'inventory' | 'sellers' | 'offers' | 'leads' | 'subscription'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'analytics' | 'sellers' | 'offers' | 'leads' | 'company' | 'whatsapp' | 'subscription' | 'notifications'>('inventory');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all');
   const [selectedSellerFilter, setSelectedSellerFilter] = useState<string>('all');
+  const [selectedMakeFilter, setSelectedMakeFilter] = useState<string>('');
+  const [selectedModelFilter, setSelectedModelFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+
+  // Smooth tab switching handler that scrolls directly to the tab content section
+  const handleSwitchTab = (tab: 'inventory' | 'analytics' | 'sellers' | 'offers' | 'leads' | 'company' | 'whatsapp' | 'subscription' | 'notifications') => {
+    setActiveTab(tab);
+    setTimeout(() => {
+      const el = document.getElementById('agency-tab-section');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 40);
+  };
 
   const [selectedOffer, setSelectedOffer] = useState<PrivateCarOffer | null>(null);
   const [agencyNoteInput, setAgencyNoteInput] = useState('');
@@ -94,10 +124,118 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [plansCycleView, setPlansCycleView] = useState<'monthly' | 'yearly'>('monthly');
 
+  // PDF Quote Modal State
+  const [quoteCar, setQuoteCar] = useState<CarListing | null>(null);
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+
+  const handleOpenQuoteModal = (car: CarListing) => {
+    setQuoteCar(car);
+    setIsQuoteModalOpen(true);
+  };
+
   const handleCopyText = (text: string, fieldKey: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(fieldKey);
     setTimeout(() => setCopiedField(null), 2500);
+  };
+
+  // Company Profile State (Datos de Empresa para Membrete & PDF)
+  const [companyName, setCompanyName] = useState(currentAgency?.name || '');
+  const [companyLogo, setCompanyLogo] = useState(currentAgency?.logoUrl || '');
+  const [companyBanner, setCompanyBanner] = useState(currentAgency?.bannerUrl || '');
+  const [companyOwnerName, setCompanyOwnerName] = useState(currentAgency?.ownerName || '');
+  const [companyTaxId, setCompanyTaxId] = useState(currentAgency?.cuitOrTaxId || '7.226.273-7');
+  const [companyAddress, setCompanyAddress] = useState(currentAgency?.address || '');
+  const [companyCity, setCompanyCity] = useState(currentAgency?.city || '');
+  const [companyProvince, setCompanyProvince] = useState(currentAgency?.provinceOrState || '');
+  const [companyPhone, setCompanyPhone] = useState(currentAgency?.phone || '');
+  const [companyWhatsapp, setCompanyWhatsapp] = useState(currentAgency?.whatsappNumber || '');
+  const [companyEmail, setCompanyEmail] = useState(currentAgency?.email || '');
+  const [companyWebsite, setCompanyWebsite] = useState(currentAgency?.website || 'https://www.micarro.com');
+  const [companyBankInfo, setCompanyBankInfo] = useState(
+    currentAgency?.bankInfo || 'Banco Itaú / Continental • Cta Cte Gs: 620011158 • Alias SIPAP: 7226273'
+  );
+  const [companyDefaultWarranty, setCompanyDefaultWarranty] = useState(
+    currentAgency?.defaultWarranty || 'Garantía mecánica escrita de 6 meses o 10.000 km (motor y caja). Chequeo de 100 puntos.'
+  );
+  const [companyOpeningHours, setCompanyOpeningHours] = useState(
+    currentAgency?.openingHours || 'Lunes a Viernes de 08:00 a 18:30 | Sábados de 08:30 a 13:00'
+  );
+  const [companyAbout, setCompanyAbout] = useState(
+    currentAgency?.about || 'Concesionaria líder en venta de vehículos seleccionados, 0km y usados garantizados.'
+  );
+  const [companySavedAlert, setCompanySavedAlert] = useState(false);
+
+  // Sync form states when currentAgency updates
+  useEffect(() => {
+    if (currentAgency) {
+      setCompanyName(currentAgency.name);
+      setCompanyLogo(currentAgency.logoUrl);
+      setCompanyBanner(currentAgency.bannerUrl || '');
+      setCompanyOwnerName(currentAgency.ownerName);
+      setCompanyTaxId(currentAgency.cuitOrTaxId || '7.226.273-7');
+      setCompanyAddress(currentAgency.address);
+      setCompanyCity(currentAgency.city);
+      setCompanyProvince(currentAgency.provinceOrState);
+      setCompanyPhone(currentAgency.phone);
+      setCompanyWhatsapp(currentAgency.whatsappNumber);
+      setCompanyEmail(currentAgency.email);
+      setCompanyWebsite(currentAgency.website || 'https://www.micarro.com');
+      setCompanyBankInfo(
+        currentAgency.bankInfo || 'Banco Itaú / Continental • Cta Cte Gs: 620011158 • Alias SIPAP: 7226273'
+      );
+      setCompanyDefaultWarranty(
+        currentAgency.defaultWarranty || 'Garantía mecánica escrita de 6 meses o 10.000 km (motor y caja). Chequeo de 100 puntos.'
+      );
+      setCompanyOpeningHours(
+        currentAgency.openingHours || 'Lunes a Viernes de 08:00 a 18:30 | Sábados de 08:30 a 13:00'
+      );
+      setCompanyAbout(
+        currentAgency.about || 'Concesionaria líder en venta de vehículos seleccionados, 0km y usados garantizados.'
+      );
+    }
+  }, [currentAgency?.id, currentAgency?.name, currentAgency?.logoUrl]);
+
+  // Handle Logo Upload from device
+  const handleCompanyLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setCompanyLogo(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle Save Company Profile
+  const handleSaveCompanyProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentAgency) return;
+
+    updateAgency(currentAgency.id, {
+      name: companyName.trim() || currentAgency.name,
+      logoUrl: companyLogo,
+      bannerUrl: companyBanner,
+      ownerName: companyOwnerName.trim(),
+      cuitOrTaxId: companyTaxId.trim(),
+      address: companyAddress.trim(),
+      city: companyCity.trim(),
+      provinceOrState: companyProvince.trim(),
+      phone: companyPhone.trim(),
+      whatsappNumber: companyWhatsapp.trim().replace(/[^0-9]/g, ''),
+      email: companyEmail.trim(),
+      website: companyWebsite.trim(),
+      bankInfo: companyBankInfo.trim(),
+      defaultWarranty: companyDefaultWarranty.trim(),
+      openingHours: companyOpeningHours.trim(),
+      about: companyAbout.trim(),
+    });
+
+    setCompanySavedAlert(true);
+    setTimeout(() => setCompanySavedAlert(false), 4000);
   };
 
   // New Seller Modal State
@@ -129,6 +267,14 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
   const filteredCars = agencyCars.filter((car) => {
     if (selectedStatusFilter !== 'all' && car.status !== selectedStatusFilter) return false;
     if (selectedSellerFilter !== 'all' && car.createdBySellerId !== selectedSellerFilter) return false;
+    if (selectedMakeFilter && car.make.trim().toLowerCase() !== selectedMakeFilter.trim().toLowerCase()) return false;
+    if (selectedModelFilter) {
+      const carMod = car.model.trim().toLowerCase();
+      const filterMod = selectedModelFilter.trim().toLowerCase();
+      if (carMod !== filterMod && !carMod.includes(filterMod) && !filterMod.includes(carMod)) {
+        return false;
+      }
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchText = `${car.make} ${car.model} ${car.version} ${car.year} ${car.color}`.toLowerCase();
@@ -136,6 +282,10 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
     }
     return true;
   });
+
+  // Distinct makes and models coordinating canonical dictionary with agency stock
+  const agencyMakes = getAllBrands(agencyCars);
+  const agencyModels = getModelsForBrand(selectedMakeFilter, agencyCars);
 
   // Sellers of this agency
   const agencySellers = users.filter((u) => u.agencyId === currentAgency.id);
@@ -166,6 +316,9 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
 
   // Leads for this agency
   const agencyLeads = leads.filter((l) => l.agencyId === currentAgency.id);
+  const unreadLeadsCount = agencyLeads.filter((l) => l.status === 'new').length;
+  const unreadOffersCount = relevantOffers.filter((o) => o.status === 'pending').length;
+  const totalUnreadNotifs = unreadLeadsCount + unreadOffersCount;
 
   // Copy quick WhatsApp sales pitch to clipboard
   const handleCopyPitch = (car: CarListing) => {
@@ -244,12 +397,16 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           {/* Agency & Seller Profile Info */}
-          <div className="flex items-start sm:items-center gap-4">
-            <img
-              src={currentAgency.logoUrl}
-              alt={currentAgency.name}
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-sky-400/40 shadow-lg shrink-0 bg-slate-900 backdrop-blur-md"
-            />
+          <div className="flex items-start sm:items-center gap-4 sm:gap-5">
+            <div className="relative group shrink-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+                <img
+                  src={currentAgency.logoUrl}
+                  alt={currentAgency.name}
+                  className="w-full h-full object-contain filter drop-shadow-2xl"
+                />
+              </div>
+            </div>
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl sm:text-2xl font-black text-white drop-shadow-sm">{currentAgency.name}</h1>
@@ -304,10 +461,44 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
 
           {/* Quick CTAs */}
           <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Interactive Onboarding Quick Guide Button */}
+            <AgencyOnboardingTutorial
+              agencyName={currentAgency.name}
+              onOpenNewCarModal={() => onOpenCarForm()}
+            />
+
+            <button
+              id="hero-alertas-cotizaciones-btn"
+              onClick={() => handleSwitchTab('notifications')}
+              className={`flex items-center gap-2 px-4 py-3 rounded-2xl border backdrop-blur-md transition-all shadow-md active:scale-98 cursor-pointer ${
+                activeTab === 'notifications'
+                  ? 'bg-amber-400 text-slate-950 border-amber-300 font-black ring-2 ring-amber-300/50'
+                  : 'bg-sky-950/80 hover:bg-sky-900/90 text-white font-bold border-sky-400/30'
+              }`}
+              title="Ver Centro de Notificaciones y Cotizaciones"
+            >
+              <div className="relative">
+                {totalUnreadNotifs > 0 ? (
+                  <BellRing className={`w-4 h-4 ${activeTab === 'notifications' ? 'text-slate-950' : 'text-amber-300 animate-bounce'}`} />
+                ) : (
+                  <Bell className="w-4 h-4 text-sky-300" />
+                )}
+                {totalUnreadNotifs > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping" />
+                )}
+              </div>
+              <span className="text-xs">Alertas & Cotizaciones</span>
+              {totalUnreadNotifs > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black font-mono shadow-sm">
+                  {totalUnreadNotifs}
+                </span>
+              )}
+            </button>
+
             <button
               onClick={() => {
                 if (currentAgency.subscriptionStatus !== 'active' && currentAgency.subscriptionStatus !== 'trial') {
-                  setActiveTab('subscription');
+                  handleSwitchTab('subscription');
                   alert(`⛔ Suscripción inactiva: La concesionaria "${currentAgency.name}" tiene su membresía suspendida o pendiente de pago. Debe abonar el servicio para habilitar la carga de vehículos y el acceso a los vendedores.`);
                   return;
                 }
@@ -346,6 +537,20 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
             ></div>
           </div>
         </div>
+
+        {/* Interactive Car Brand Logos Bar */}
+        <div className="mt-4 pt-3.5 border-t border-sky-400/20 relative z-10">
+          <CarBrandStrip
+            selectedBrand={selectedMakeFilter}
+            onSelectBrand={(brandName) => {
+              setSelectedMakeFilter(brandName);
+              setSelectedModelFilter('');
+              handleSwitchTab('inventory');
+            }}
+            title="Marcas en salón y red de agencias:"
+            theme="dark"
+          />
+        </div>
       </div>
 
       {/* Agency Subscription Status Alert */}
@@ -374,7 +579,7 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
 
           <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
             <button
-              onClick={() => setActiveTab('subscription')}
+              onClick={() => handleSwitchTab('subscription')}
               className="px-4 py-2.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 justify-center w-full md:w-auto"
             >
               <CreditCard className="w-4 h-4" />
@@ -413,13 +618,19 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
           <p className="text-[10px] text-emerald-700/80 font-semibold">Operaciones cerradas</p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white border border-slate-200 space-y-1 shadow-sm">
+        <div
+          onClick={() => handleSwitchTab('analytics')}
+          className="p-4 rounded-2xl bg-white border border-slate-200 space-y-1 shadow-sm hover:border-emerald-300 hover:shadow-md transition-all cursor-pointer group"
+          title="Ver estadísticas detalladas de clics y visualizaciones"
+        >
           <div className="flex items-center justify-between text-slate-500 text-xs">
-            <span className="font-semibold">Clics WhatsApp</span>
-            <MessageCircle className="w-4 h-4 text-emerald-600" />
+            <span className="font-semibold group-hover:text-emerald-700 transition-colors">Clics WhatsApp</span>
+            <MessageCircle className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
           </div>
-          <p className="text-2xl font-black text-slate-900">{totalWhatsappClicks}</p>
-          <p className="text-[10px] text-slate-500">Consultas directas</p>
+          <p className="text-2xl font-black text-slate-900 group-hover:text-emerald-700 transition-colors">{totalWhatsappClicks}</p>
+          <p className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
+            <span>Ver gráficos & métricas →</span>
+          </p>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200 space-y-1 shadow-sm">
@@ -443,67 +654,160 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
         </div>
       </div>
 
-      {/* Main Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-2 text-xs font-semibold">
-        <button
-          onClick={() => setActiveTab('inventory')}
-          className={`px-4 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap transition-colors ${
-            activeTab === 'inventory'
-              ? 'bg-blue-700 text-white font-bold shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <Car className="w-4 h-4" />
-          <span>Salón de Autos ({agencyCars.length})</span>
-        </button>
+      {/* Main Navigation Tabs Section */}
+      <div id="agency-tab-section" className="scroll-mt-24 space-y-4">
+        <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-2 text-xs font-semibold">
+          <button
+            id="tab-btn-notifications"
+            onClick={() => handleSwitchTab('notifications')}
+            className={`px-4 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer ${
+              activeTab === 'notifications'
+                ? 'bg-amber-400 text-slate-950 font-black shadow-md ring-2 ring-amber-300'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-amber-50'
+            }`}
+          >
+            <BellRing className={`w-4 h-4 ${totalUnreadNotifs > 0 ? 'text-rose-600 animate-bounce' : 'text-slate-600'}`} />
+            <span>Notificaciones & Alertas</span>
+            {totalUnreadNotifs > 0 ? (
+              <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black font-mono">
+                {totalUnreadNotifs} nuevas
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold font-mono">
+                {agencyLeads.length + relevantOffers.length}
+              </span>
+            )}
+          </button>
 
-        <button
-          onClick={() => setActiveTab('sellers')}
-          className={`px-4 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap transition-colors ${
-            activeTab === 'sellers'
-              ? 'bg-blue-700 text-white font-bold shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>Equipo de Vendedores ({agencySellers.length})</span>
-        </button>
+          <button
+            onClick={() => handleSwitchTab('inventory')}
+            className={`px-4 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
+              activeTab === 'inventory'
+                ? 'bg-blue-700 text-white font-bold shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Car className="w-4 h-4" />
+            <span>Salón de Autos ({agencyCars.length})</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('leads')}
-          className={`px-4 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap transition-colors ${
-            activeTab === 'leads'
-              ? 'bg-blue-700 text-white font-bold shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <MessageCircle className="w-4 h-4" />
-          <span>Prospectos & CRM ({agencyLeads.length})</span>
-        </button>
+          <button
+            id="tab-btn-agency-analytics"
+            onClick={() => handleSwitchTab('analytics')}
+            className={`px-4 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer ${
+              activeTab === 'analytics'
+                ? 'bg-blue-700 text-white font-bold shadow-sm ring-2 ring-blue-400/40'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-blue-50'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4 text-emerald-500" />
+            <span>Estadísticas & Gráficos</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800">
+              {totalWhatsappClicks} chats
+            </span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('offers')}
-          className={`px-4 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap transition-colors ${
-            activeTab === 'offers'
-              ? 'bg-blue-700 text-white font-bold shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <Tag className="w-4 h-4" />
-          <span>Toma de Usados ({relevantOffers.length})</span>
-        </button>
+          <button
+            onClick={() => handleSwitchTab('sellers')}
+            className={`px-4 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
+              activeTab === 'sellers'
+                ? 'bg-blue-700 text-white font-bold shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Equipo de Vendedores ({agencySellers.length})</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('subscription')}
-          className={`px-4 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap transition-colors ${
-            activeTab === 'subscription'
-              ? 'bg-blue-700 text-white font-bold shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <CreditCard className="w-4 h-4" />
-          <span>Planes & Medios de Pago</span>
-        </button>
+          <button
+            onClick={() => handleSwitchTab('leads')}
+            className={`px-4 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
+              activeTab === 'leads'
+                ? 'bg-blue-700 text-white font-bold shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>Prospectos & CRM ({agencyLeads.length})</span>
+          </button>
+
+          <button
+            onClick={() => handleSwitchTab('offers')}
+            className={`px-4 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
+              activeTab === 'offers'
+                ? 'bg-blue-700 text-white font-bold shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Tag className="w-4 h-4" />
+            <span>Toma de Usados ({relevantOffers.length})</span>
+          </button>
+
+          <button
+            id="tab-btn-whatsapp-settings"
+            onClick={() => handleSwitchTab('whatsapp')}
+            className={`px-4 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer ${
+              activeTab === 'whatsapp'
+                ? 'bg-emerald-600 text-white font-black shadow-md ring-2 ring-emerald-400/40'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-emerald-50'
+            }`}
+          >
+            <MessageCircle className={`w-4 h-4 ${activeTab === 'whatsapp' ? 'text-white fill-white' : 'text-emerald-600'}`} />
+            <span>WhatsApp Business & Mensajes</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800">
+              Auto
+            </span>
+          </button>
+
+          <button
+            onClick={() => handleSwitchTab('company')}
+            className={`px-4 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
+              activeTab === 'company'
+                ? 'bg-blue-700 text-white font-bold shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            <span>Datos de Empresa</span>
+          </button>
+
+          <button
+            onClick={() => handleSwitchTab('subscription')}
+            className={`px-4 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
+              activeTab === 'subscription'
+                ? 'bg-blue-700 text-white font-bold shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <CreditCard className="w-4 h-4" />
+            <span>Planes & Medios de Pago</span>
+          </button>
+        </div>
+
+        {/* TAB 0: NOTIFICATIONS & COMMERCIAL ALERTS */}
+        {activeTab === 'notifications' && (
+          <div className="animate-fadeIn">
+            <AgencyNotificationPanel
+              onOpenCarDetail={onOpenCarDetail}
+              onOpenQuotePdf={handleOpenQuoteModal}
+              onNavigateToTab={(t) => handleSwitchTab(t)}
+            />
+          </div>
+        )}
+
+        {/* TAB: ANALYTICS & RECHARTS STATS */}
+        {activeTab === 'analytics' && (
+          <div className="animate-fadeIn">
+            <AgencyStatsView
+              agency={currentAgency}
+              cars={agencyCars}
+              sellers={agencySellers}
+              formatPrice={formatPrice}
+              onOpenCarDetail={onOpenCarDetail}
+              onOpenQuotePdf={handleOpenQuoteModal}
+            />
+          </div>
+        )}
       </div>
 
       {/* TAB 1: INVENTORY & SALON */}
@@ -513,21 +817,86 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
           <UploadTutorialBanner onStartUpload={() => onOpenCarForm()} />
 
           {/* Filter & Search Bar */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3 text-xs shadow-sm">
-            <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
-              {/* Search */}
-              <div className="relative flex-1 sm:w-64">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar por marca, modelo..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white"
-                />
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 text-xs shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-wrap flex-1">
+                {/* Search */}
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar por marca, modelo, versión..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white"
+                  />
+                </div>
+
+                {/* Make Dropdown */}
+                <select
+                  value={selectedMakeFilter}
+                  onChange={(e) => {
+                    setSelectedMakeFilter(e.target.value);
+                    setSelectedModelFilter('');
+                  }}
+                  className="bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-600 font-medium"
+                >
+                  <option value="">Todas las Marcas</option>
+                  {agencyMakes.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Model Dropdown */}
+                <select
+                  value={selectedModelFilter}
+                  onChange={(e) => setSelectedModelFilter(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-600 font-medium"
+                >
+                  <option value="">
+                    {selectedMakeFilter ? `Todos los ${selectedMakeFilter}` : 'Todos los Modelos'}
+                  </option>
+                  {agencyModels.map((mod) => (
+                    <option key={mod} value={mod}>
+                      {mod}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Seller Filter */}
+                <select
+                  value={selectedSellerFilter}
+                  onChange={(e) => setSelectedSellerFilter(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-600 font-medium"
+                >
+                  <option value="all">Todos los Vendedores</option>
+                  {currentUser && (
+                    <option value={currentUser.id}>👤 Mis Autos ({currentUser.name})</option>
+                  )}
+                  {agencySellers.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.role === 'seller' ? 'Vendedor' : 'Gerente'})
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* Status Filter */}
+              <div className="flex items-center gap-2 self-end lg:self-auto shrink-0">
+                <span className="text-slate-500 text-xs font-semibold">{filteredCars.length} autos</span>
+                <button
+                  onClick={() => onOpenCarForm()}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs shadow transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                  <span>Cargar Auto</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Status Filter Tabs & Active Filter indicators */}
+            <div className="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-slate-100">
               <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
                 {[
                   { id: 'all', label: 'Todos' },
@@ -550,33 +919,49 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
                 ))}
               </div>
 
-              {/* Seller Filter */}
-              <select
-                value={selectedSellerFilter}
-                onChange={(e) => setSelectedSellerFilter(e.target.value)}
-                className="bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-600 font-medium"
-              >
-                <option value="all">Todos los Vendedores</option>
-                {currentUser && (
-                  <option value={currentUser.id}>👤 Mis Autos ({currentUser.name})</option>
-                )}
-                {agencySellers.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.role === 'seller' ? 'Vendedor' : 'Gerente'})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2 self-end md:self-auto">
-              <span className="text-slate-500 text-xs">{filteredCars.length} autos mostrados</span>
-              <button
-                onClick={() => onOpenCarForm()}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs shadow transition-all"
-              >
-                <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                <span>Cargar Auto</span>
-              </button>
+              {/* Reset active filters */}
+              {(selectedMakeFilter || selectedModelFilter || selectedSellerFilter !== 'all' || selectedStatusFilter !== 'all' || searchQuery) && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {selectedMakeFilter && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 font-bold text-[11px]">
+                      Marca: {selectedMakeFilter}
+                      <button
+                        onClick={() => {
+                          setSelectedMakeFilter('');
+                          setSelectedModelFilter('');
+                        }}
+                        className="hover:text-blue-950 ml-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {selectedModelFilter && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 font-bold text-[11px]">
+                      Modelo: {selectedModelFilter}
+                      <button
+                        onClick={() => setSelectedModelFilter('')}
+                        className="hover:text-blue-950 ml-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSelectedMakeFilter('');
+                      setSelectedModelFilter('');
+                      setSelectedSellerFilter('all');
+                      setSelectedStatusFilter('all');
+                      setSearchQuery('');
+                    }}
+                    className="text-xs text-rose-600 hover:text-rose-800 font-semibold underline flex items-center gap-0.5 ml-1"
+                  >
+                    <X className="w-3 h-3" />
+                    <span>Limpiar filtros</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -724,6 +1109,15 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
                         </div>
 
                         <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleOpenQuoteModal(car)}
+                            title="Generar Cotización Proforma en PDF"
+                            className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors flex items-center gap-1 text-[11px] font-bold"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">PDF</span>
+                          </button>
+
                           <button
                             onClick={() => onOpenCarForm(car)}
                             title="Editar datos del auto"
@@ -921,22 +1315,40 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between pt-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                     <span className="text-[11px] text-slate-400">
                       {new Date(lead.createdAt).toLocaleString('es-ES')}
                     </span>
 
-                    <button
-                      onClick={() => {
-                        const phone = lead.clientPhone.replace(/[^0-9]/g, '');
-                        const msg = `¡Hola ${lead.clientName}! 👋 Te escribo de *${currentAgency.name}* sobre tu consulta por el *${lead.carTitle}*. ¿Cómo estás?`;
-                        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-                      }}
-                      className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      <span>Abrir Chat de WhatsApp</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {lead.carId && (
+                        <button
+                          onClick={() => {
+                            const foundCar = carListings.find((c) => c.id === lead.carId);
+                            if (foundCar) {
+                              handleOpenQuoteModal(foundCar);
+                            }
+                          }}
+                          className="px-3.5 py-1.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all"
+                          title="Generar Cotización Proforma en PDF para este cliente"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>Cotización PDF</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          const phone = lead.clientPhone.replace(/[^0-9]/g, '');
+                          const msg = `¡Hola ${lead.clientName}! 👋 Te escribo de *${currentAgency.name}* sobre tu consulta por el *${lead.carTitle}*. ¿Cómo estás?`;
+                          window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        <span>Abrir Chat de WhatsApp</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1568,6 +1980,410 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
         </div>
       )}
 
+      {/* TAB 5: DATOS DE EMPRESA & MEMBRETE PARA COTIZACIONES PDF */}
+      {activeTab === 'company' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Header Info Banner */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-blue-900 via-slate-900 to-indigo-950 text-white shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4 border border-blue-800/40">
+            <div className="space-y-1.5 max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-200 text-xs font-bold border border-blue-400/30">
+                <Building2 className="w-3.5 h-3.5" />
+                <span>Perfil Corporativo & Membrete Oficial</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-white">
+                Datos de Empresa & Encabezado de Cotizaciones
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                Personalizá la información fiscal, logo oficial, teléfonos de contacto y cuentas bancarias.
+                Estos datos se sincronizan automáticamente en el encabezado y pie de página de las cotizaciones en PDF y en la ficha de tu agencia.
+              </p>
+            </div>
+
+            {agencyCars.length > 0 && (
+              <button
+                type="button"
+                onClick={() => handleOpenQuoteModal(agencyCars[0])}
+                className="shrink-0 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow transition-transform active:scale-95"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Ver Ejemplo de Cotización PDF</span>
+              </button>
+            )}
+          </div>
+
+          {/* Success Save Alert Notification */}
+          {companySavedAlert && (
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs sm:text-sm font-semibold flex items-center justify-between shadow-sm animate-fadeIn">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span>¡Datos de la empresa guardados y actualizados exitosamente! Ya se aplicaron al membrete y PDF.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCompanySavedAlert(false)}
+                className="text-emerald-700 hover:text-emerald-900 font-bold text-xs"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          <form onSubmit={handleSaveCompanyProfile} className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Column: Visual Identity & Logo */}
+              <div className="space-y-6">
+                <div className="p-5 bg-white rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-blue-700" />
+                    <span>Logo & Marca de la Agencia</span>
+                  </h3>
+
+                  {/* Logo Preview */}
+                  <div className="flex flex-col items-center p-5 bg-slate-50/80 rounded-3xl border border-slate-200/80 text-center">
+                    <div className="w-28 h-28 sm:w-36 sm:h-36 mb-3 flex items-center justify-center">
+                      <img
+                        src={companyLogo || '/logo.png'}
+                        alt="Logo de la Agencia"
+                        className="w-full h-full object-contain filter drop-shadow-md"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/logo.png';
+                        }}
+                      />
+                    </div>
+                    <span className="font-bold text-slate-900 text-sm">{companyName || currentAgency.name}</span>
+                    <span className="text-[11px] text-slate-500 font-mono">
+                      RUC: {companyTaxId || '7.226.273-7'}
+                    </span>
+                  </div>
+
+                  {/* File Upload Button */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Subir Logo desde tu dispositivo:
+                    </label>
+                    <label className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-blue-400 bg-blue-50/50 hover:bg-blue-50 text-blue-700 font-bold text-xs cursor-pointer transition-colors">
+                      <Upload className="w-4 h-4" />
+                      <span>Seleccionar imagen (PNG / JPG)</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCompanyLogoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-[10px] text-slate-400 mt-1">Recomendado: imagen cuadrada o con fondo transparente.</p>
+                  </div>
+
+                  {/* Direct Logo URL Input */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      O pegar URL directa de la imagen:
+                    </label>
+                    <input
+                      type="url"
+                      value={companyLogo}
+                      onChange={(e) => setCompanyLogo(e.target.value)}
+                      placeholder="https://ejemplo.com/logo.png"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
+                    />
+                  </div>
+
+                  {/* Direct Banner URL */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Banner de Portada (Opcional):
+                    </label>
+                    <input
+                      type="url"
+                      value={companyBanner}
+                      onChange={(e) => setCompanyBanner(e.target.value)}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Help Card */}
+                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 text-xs space-y-2">
+                  <p className="font-bold flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>¿Dónde se reflejan estos datos?</span>
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-[11px] text-amber-900">
+                    <li>En el encabezado oficial de todas las cotizaciones proforma PDF.</li>
+                    <li>En el pie de página con tus datos de transferencia para reservas.</li>
+                    <li>En el perfil público de la concesionaria ante los compradores.</li>
+                    <li>En los botones de contacto directo por WhatsApp.</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Center & Right Column: Business & Contact Details */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* General Business Information */}
+                <div className="p-5 sm:p-6 bg-white rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <Building2 className="w-4 h-4 text-blue-700" />
+                    <span>Información Comercial & Fiscal</span>
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        Nombre Comercial / Razón Social *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        placeholder="Ej: Concesionaria Central Automotores"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 font-bold focus:outline-none focus:border-blue-600 focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        RUC / CUIT / Identificación Tributaria *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={companyTaxId}
+                        onChange={(e) => setCompanyTaxId(e.target.value)}
+                        placeholder="Ej: 7.226.273-7"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 font-mono font-bold focus:outline-none focus:border-blue-600 focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        Titular / Responsable Comercial
+                      </label>
+                      <input
+                        type="text"
+                        value={companyOwnerName}
+                        onChange={(e) => setCompanyOwnerName(e.target.value)}
+                        placeholder="Ej: Marcelo Castro"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        Sitio Web Oficial
+                      </label>
+                      <input
+                        type="url"
+                        value={companyWebsite}
+                        onChange={(e) => setCompanyWebsite(e.target.value)}
+                        placeholder="https://www.tuagencia.com"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Location & Contact Channels */}
+                <div className="p-5 sm:p-6 bg-white rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <MapPin className="w-4 h-4 text-rose-600" />
+                    <span>Ubicación del Salón & Canales de Contacto</span>
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div className="sm:col-span-2">
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        Dirección del Salón de Ventas *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={companyAddress}
+                        onChange={(e) => setCompanyAddress(e.target.value)}
+                        placeholder="Ej: Avda. Eusebio Ayala 4520 c/ De la Victoria"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        Ciudad *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={companyCity}
+                        onChange={(e) => setCompanyCity(e.target.value)}
+                        placeholder="Ej: Asunción"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        Departamento / Provincia *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={companyProvince}
+                        onChange={(e) => setCompanyProvince(e.target.value)}
+                        placeholder="Ej: Central"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block font-semibold text-slate-700">
+                          WhatsApp Oficial de Ventas *
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => handleSwitchTab('whatsapp')}
+                          className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <MessageCircle className="w-3 h-3 text-emerald-600" />
+                          <span>Configurar WhatsApp Business & Mensajes →</span>
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          required
+                          value={companyWhatsapp}
+                          onChange={(e) => setCompanyWhatsapp(e.target.value)}
+                          placeholder="595975635770"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 font-mono font-bold focus:outline-none focus:border-blue-600 focus:bg-white"
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1">Con código de país (Ej: 595975635770 sin + ni guiones)</p>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        Teléfono Directo / PBX
+                      </label>
+                      <input
+                        type="text"
+                        value={companyPhone}
+                        onChange={(e) => setCompanyPhone(e.target.value)}
+                        placeholder="+595 21 680 120"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        Correo Electrónico de Contacto *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={companyEmail}
+                        onChange={(e) => setCompanyEmail(e.target.value)}
+                        placeholder="ventas@concesionaria.com"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* PDF Quote Data: Bank Accounts & Warranty */}
+                <div className="p-5 sm:p-6 bg-white rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <Landmark className="w-4 h-4 text-emerald-600" />
+                    <span>Datos Bancarios & Garantía para Cotizaciones PDF</span>
+                  </h3>
+
+                  <div className="space-y-4 text-xs">
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        Cuentas Bancarias & Alias para Reservas (Aparece en el pie de la cotización)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={companyBankInfo}
+                        onChange={(e) => setCompanyBankInfo(e.target.value)}
+                        placeholder="Banco Itaú / Continental • Cta Cte Gs: 620011158 • Alias SIPAP: 7226273 • Titular: Agencia"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-900 font-mono focus:outline-none focus:border-blue-600 focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        Términos de Garantía por Defecto en Cotizaciones
+                      </label>
+                      <input
+                        type="text"
+                        value={companyDefaultWarranty}
+                        onChange={(e) => setCompanyDefaultWarranty(e.target.value)}
+                        placeholder="Garantía oficial por escrito de 6 meses o 10.000 km (motor y caja). Chequeo de 100 puntos."
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">
+                          Horarios de Atención
+                        </label>
+                        <input
+                          type="text"
+                          value={companyOpeningHours}
+                          onChange={(e) => setCompanyOpeningHours(e.target.value)}
+                          placeholder="Lunes a Viernes de 08:00 a 18:30 | Sábados de 08:30 a 13:00"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">
+                          Descripción o Slogan de la Concesionaria
+                        </label>
+                        <input
+                          type="text"
+                          value={companyAbout}
+                          onChange={(e) => setCompanyAbout(e.target.value)}
+                          placeholder="Especialistas en 0km y seminuevos garantizados"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save Changes Button Bar */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-3xl bg-slate-900 text-white shadow-xl">
+                  <div className="text-xs text-slate-300">
+                    <p className="font-bold text-white">¿Listo para aplicar los cambios?</p>
+                    <p className="text-[11px] text-slate-400">Los cambios se guardan de inmediato en el estado central y localStorage.</p>
+                  </div>
+
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <button
+                      type="submit"
+                      className="w-full sm:w-auto px-7 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>Guardar Datos de Empresa</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* TAB 8: WHATSAPP BUSINESS & PREDEFINED MESSAGES SETTINGS */}
+      {activeTab === 'whatsapp' && (
+        <div className="animate-fadeIn">
+          <AgencyWhatsAppSettings agency={currentAgency} agencyCars={agencyCars} />
+        </div>
+      )}
+
       {/* Modal: Add New Seller */}
       {isAddSellerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
@@ -1690,6 +2506,16 @@ export const AgencyPanelView: React.FC<AgencyPanelViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Professional PDF Quote Modal */}
+      <CarQuotePdfModal
+        car={quoteCar}
+        isOpen={isQuoteModalOpen}
+        onClose={() => {
+          setIsQuoteModalOpen(false);
+          setQuoteCar(null);
+        }}
+      />
     </div>
   );
 };

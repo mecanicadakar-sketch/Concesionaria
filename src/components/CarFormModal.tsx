@@ -23,6 +23,7 @@ import {
   Link,
   ChevronDown,
 } from 'lucide-react';
+import { getAllBrands, getModelsForBrand } from '../data/carBrandsData';
 
 interface CarFormModalProps {
   isOpen?: boolean;
@@ -55,10 +56,10 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({
   onClose,
 }) => {
   const targetInitialCar = initialCar || carToEdit;
-  const { currentAgency, currentAgencyId, agencies, addCarListing, updateCarListing, users, currentUser } = useApp();
+  const { currentAgency, currentAgencyId, agencies, carListings, subscriptionPlans, addCarListing, updateCarListing, users, currentUser } = useApp();
 
   const [agencyId, setAgencyId] = useState<string>(
-    targetInitialCar?.agencyId || currentAgencyId || agencies[0]?.id || 'agency-dakar'
+    targetInitialCar?.agencyId || currentAgencyId || (agencies && agencies[0]?.id) || 'agency-dakar'
   );
 
   // Seller assigned
@@ -153,14 +154,14 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({
     }
   }, [targetInitialCar]);
 
-  if (!isOpen) return null;
-
   // Auto-generate title if empty
   useEffect(() => {
-    if (!initialCar && make && model) {
+    if (!initialCar && make && model && !title) {
       setTitle(`${make} ${model} ${version} ${year}`);
     }
   }, [make, model, version, year, initialCar]);
+
+  if (!isOpen) return null;
 
   // Client-side image compressor for lightweight, lightning-fast storage & zero quota crashes
   const compressImageFile = (file: File): Promise<string> => {
@@ -347,6 +348,20 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({
           city: 'Asunción',
         };
 
+      // Check max car limit for new additions (Agency salon limit: 30 vehicles)
+      if (!initialCar && !carToEdit) {
+        const agencyCurrentCars = carListings.filter((c) => c.agencyId === targetAgency.id);
+        const agencyPlan = subscriptionPlans.find((p) => p.id === targetAgency.subscriptionPlanId);
+        const maxAllowed = agencyPlan?.maxCars || 30;
+
+        if (agencyCurrentCars.length >= maxAllowed) {
+          setErrorMsg(
+            `⛔ Límite alcanzado: La concesionaria "${targetAgency.name}" tiene actualmente ${agencyCurrentCars.length} de ${maxAllowed} vehículos cargados en su salón. Para publicar más, debes eliminar o marcar como vendido algún auto existente o ampliar el cupo del plan.`
+          );
+          return;
+        }
+      }
+
       const targetSeller = users.find((u) => u.id === sellerId);
 
       const carData = {
@@ -443,7 +458,7 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({
                 onChange={(e) => setAgencyId(e.target.value)}
                 className="w-full bg-slate-900 text-white rounded-xl p-2.5 border border-slate-700 text-xs font-medium focus:outline-none focus:border-amber-500"
               >
-                {agencies.map((a) => (
+                {(agencies || []).map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.name} ({a.city})
                   </option>
@@ -461,7 +476,7 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({
                 className="w-full bg-slate-900 text-amber-400 font-semibold rounded-xl p-2.5 border border-slate-700 text-xs focus:outline-none focus:border-amber-500"
               >
                 <option value="">-- Concesionaria General (Sin vendedor fijo) --</option>
-                {users
+                {(users || [])
                   .filter((u) => u.agencyId === agencyId || u.agencyId === 'all')
                   .map((u) => (
                     <option key={u.id} value={u.id}>
@@ -632,11 +647,17 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="Ej. Toyota, Volkswagen, BMW"
+                  list="modal-car-makes"
+                  placeholder="Ej. Toyota, Volkswagen, Ford"
                   value={make}
                   onChange={(e) => setMake(e.target.value)}
                   className="w-full bg-slate-950 text-white rounded-xl p-2.5 border border-slate-700 text-xs focus:outline-none focus:border-amber-500"
                 />
+                <datalist id="modal-car-makes">
+                  {getAllBrands().map((b) => (
+                    <option key={b} value={b} />
+                  ))}
+                </datalist>
               </div>
 
               <div>
@@ -644,11 +665,17 @@ export const CarFormModal: React.FC<CarFormModalProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="Ej. Hilux, Golf GTI, Serie 3"
+                  list="modal-car-models"
+                  placeholder="Ej. Hilux, Golf, Cronos"
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
                   className="w-full bg-slate-950 text-white rounded-xl p-2.5 border border-slate-700 text-xs focus:outline-none focus:border-amber-500"
                 />
+                <datalist id="modal-car-models">
+                  {getModelsForBrand(make).map((m) => (
+                    <option key={m} value={m} />
+                  ))}
+                </datalist>
               </div>
 
               <div>

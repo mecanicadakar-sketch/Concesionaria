@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { CarListing, BodyType, CarCondition } from '../types';
+import { CarQuotePdfModal } from './CarQuotePdfModal';
+import { CarBrandStrip } from './CarBrandIcons';
+import { getAllBrands, getModelsForBrand } from '../data/carBrandsData';
+import micarroLogo from '../assets/images/logo.png';
 import {
   Search,
   Filter,
@@ -22,6 +26,8 @@ import {
   Zap,
   GitCompare,
   Check,
+  FileText,
+  X,
 } from 'lucide-react';
 
 interface CatalogViewProps {
@@ -72,6 +78,8 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
 
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [selectedQuickCategory, setSelectedQuickCategory] = useState<string>('all');
+  const [quoteCar, setQuoteCar] = useState<CarListing | null>(null);
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
   // Filter listings
   const filteredListings = carListings.filter((car) => {
@@ -83,6 +91,18 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
       const matchModel = car.model.toLowerCase().includes(q);
       const matchAgency = car.agencyName.toLowerCase().includes(q);
       if (!matchTitle && !matchMake && !matchModel && !matchAgency) return false;
+    }
+
+    // Make (Brand) Filter
+    if (filters.make && car.make.trim().toLowerCase() !== filters.make.trim().toLowerCase()) return false;
+
+    // Model Filter
+    if (filters.model) {
+      const carMod = car.model.trim().toLowerCase();
+      const filterMod = filters.model.trim().toLowerCase();
+      if (carMod !== filterMod && !carMod.includes(filterMod) && !filterMod.includes(carMod)) {
+        return false;
+      }
     }
 
     // Agency
@@ -136,13 +156,36 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
-  const makes = Array.from(new Set(carListings.map((c) => c.make)));
+  // Distinct makes and models coordinating canonical dictionary with catalog
+  const allMakes = getAllBrands(carListings);
+  
+  // Available models dynamically coordinated with selected brand
+  const availableModels = getModelsForBrand(filters.make, carListings);
+
   const bodyTypes: BodyType[] = ['SUV', 'Pickup', 'Sedán', 'Hatchback', 'Coupé', 'Monovolumen', 'Furgón / Utilitario'];
+
+  const hasActiveFilters = Boolean(
+    filters.search ||
+    filters.make ||
+    filters.model ||
+    filters.agencyId ||
+    filters.bodyType ||
+    filters.condition ||
+    filters.transmission ||
+    filters.fuelType ||
+    filters.minYear ||
+    filters.maxYear ||
+    filters.minPrice ||
+    filters.maxPrice ||
+    filters.acceptsTradeIn ||
+    filters.financingAvailable ||
+    selectedQuickCategory !== 'all'
+  );
 
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Hero Showcase Banner in Light Mode with Subtle Car Background Image */}
-      <div className="relative rounded-3xl overflow-hidden bg-slate-950 border border-sky-400/20 p-6 sm:p-10 shadow-2xl text-white">
+      <div className="relative rounded-3xl overflow-hidden bg-slate-950 border border-sky-400/20 p-6 sm:p-8 lg:p-10 shadow-2xl text-white">
         {/* Background Sports Car Image (Crisp, striking, and prominent with celeste/cyan highlights) */}
         <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden">
           <img
@@ -160,95 +203,259 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-sky-500/15 rounded-full blur-3xl pointer-events-none -mt-20 z-0"></div>
         <div className="absolute bottom-0 right-0 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl pointer-events-none z-0"></div>
 
-        <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/30 text-sky-200 text-xs font-bold mb-4 backdrop-blur-md shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Red Oficial de Concesionarias & Vehículos Garantizados</span>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div className="max-w-2xl space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/30 text-sky-200 text-xs font-bold backdrop-blur-md shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Red Oficial de Concesionarias & Vehículos Garantizados</span>
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight drop-shadow-md">
+              Encontrá tu próximo auto con <span className="text-amber-300">trato directo</span>
+            </h1>
+            <p className="text-sm sm:text-base text-sky-100/90 leading-relaxed drop-shadow-sm max-w-xl">
+              Explorá el catálogo de agencias verificadas, compará especificaciones, consultá al instante por <strong className="text-emerald-300">WhatsApp</strong> con el vendedor y cotizá tu permuta o financiación.
+            </p>
+
+            <div className="flex flex-wrap gap-3 pt-1">
+              <button
+                onClick={handleSellCar}
+                className="px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-amber-400/25 flex items-center gap-2 transition-transform active:scale-98 cursor-pointer"
+              >
+                <span>Vender o Entregar Mi Auto en Agencia</span>
+                <ChevronRight className="w-4 h-4 stroke-[3]" />
+              </button>
+              <button
+                onClick={handleAgencyPanel}
+                className="px-5 py-3 rounded-xl bg-sky-950/60 hover:bg-sky-900/80 text-white font-bold text-xs sm:text-sm border border-sky-300/30 flex items-center gap-2 backdrop-blur-md transition-colors shadow-md cursor-pointer"
+              >
+                <Building2 className="w-4 h-4 text-sky-300" />
+                <span>Portal para Vendedores y Agencias</span>
+              </button>
+            </div>
+
+            {/* Interactive Car Brands Strip inside Hero */}
+            <div className="pt-3 border-t border-sky-400/20">
+              <CarBrandStrip
+                selectedBrand={filters.make || ''}
+                onSelectBrand={(brandName) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    make: brandName,
+                    model: '', // Reset model on make change
+                  }))
+                }
+                title="Buscar por marca oficial:"
+                theme="dark"
+              />
+            </div>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight mb-3 drop-shadow-md">
-            Encontrá tu próximo auto con <span className="text-amber-300">trato directo</span>
-          </h1>
-          <p className="text-sm sm:text-base text-sky-100/90 mb-6 leading-relaxed drop-shadow-sm max-w-xl">
-            Explorá el catálogo de agencias verificadas, compará especificaciones, consultá al instante por <strong className="text-emerald-300">WhatsApp</strong> con el vendedor y cotizá tu permuta o financiación.
-          </p>
+          {/* Right-side Official MiCarro Mascot/Logo Badge */}
+          <div className="hidden md:flex flex-col items-center justify-center shrink-0 self-center lg:self-center">
+            <div className="relative group">
+              {/* Outer decorative halo glow */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 via-sky-400 to-amber-400 rounded-full blur-2xl opacity-40 group-hover:opacity-70 transition duration-700 pointer-events-none"></div>
+              
+              <div className="relative w-48 h-48 lg:w-56 lg:h-56 flex flex-col items-center justify-center">
+                <img
+                  src={micarroLogo}
+                  alt="Logo Oficial MiCarro"
+                  className="w-full h-full object-contain filter drop-shadow-2xl group-hover:scale-105 transition-transform duration-300"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
 
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={handleSellCar}
-              className="px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-amber-400/25 flex items-center gap-2 transition-transform active:scale-98"
-            >
-              <span>Vender o Entregar Mi Auto en Agencia</span>
-              <ChevronRight className="w-4 h-4 stroke-[3]" />
-            </button>
-            <button
-              onClick={handleAgencyPanel}
-              className="px-5 py-3 rounded-xl bg-sky-950/60 hover:bg-sky-900/80 text-white font-bold text-xs sm:text-sm border border-sky-300/30 flex items-center gap-2 backdrop-blur-md transition-colors shadow-md"
-            >
-              <Building2 className="w-4 h-4 text-sky-300" />
-              <span>Portal para Vendedores y Agencias</span>
-            </button>
+              {/* Status pill badge */}
+              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap px-3.5 py-1 rounded-full bg-slate-900/90 border border-sky-400/40 shadow-lg text-[11px] font-bold text-sky-200 flex items-center gap-1.5 backdrop-blur-md">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Plataforma Oficial</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Search & Quick Filters Bar */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-4">
-        {/* Main Search Input & Agency Select */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-          <div className="md:col-span-6 relative">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
+        {/* Main Search Input & Dynamic Brand/Model Selects */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3">
+          {/* Keyword Search */}
+          <div className="sm:col-span-2 md:col-span-4 relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Buscar por marca, modelo, versión (ej. Hilux, Golf, Cronos)..."
+              placeholder="Buscar por texto (ej. Hilux, Golf, Cronos)..."
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:border-blue-600 focus:bg-white transition-colors"
             />
           </div>
 
-          <div className="md:col-span-3">
+          {/* Brand (Marca) Filter */}
+          <div className="sm:col-span-1 md:col-span-2">
             <select
-              value={filters.agencyId}
-              onChange={(e) => setFilters({ ...filters, agencyId: e.target.value })}
-              className="w-full py-2.5 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs sm:text-sm focus:outline-none focus:border-blue-600 focus:bg-white transition-colors font-medium"
+              value={filters.make || ''}
+              onChange={(e) =>
+                setFilters({
+                  ...filters,
+                  make: e.target.value,
+                  model: '', // Reset model if make changes
+                })
+              }
+              className={`w-full py-2.5 px-3 rounded-xl border text-xs sm:text-sm focus:outline-none focus:border-blue-600 transition-colors font-medium ${
+                filters.make ? 'bg-blue-50/70 border-blue-400 text-blue-900 font-bold' : 'bg-slate-50 border-slate-200 text-slate-800'
+              }`}
             >
-              <option value="">Todas las Concesionarias</option>
-              {agencies.map((agency) => (
-                <option key={agency.id} value={agency.id}>
-                  {agency.name} ({agency.city})
+              <option value="">🏢 Todas las Marcas</option>
+              {allMakes.map((make) => (
+                <option key={make} value={make}>
+                  {make}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="md:col-span-3 flex items-center gap-2">
+          {/* Model (Modelo) Filter */}
+          <div className="sm:col-span-1 md:col-span-2">
+            <select
+              value={filters.model || ''}
+              onChange={(e) => setFilters({ ...filters, model: e.target.value })}
+              className={`w-full py-2.5 px-3 rounded-xl border text-xs sm:text-sm focus:outline-none focus:border-blue-600 transition-colors font-medium ${
+                filters.model ? 'bg-blue-50/70 border-blue-400 text-blue-900 font-bold' : 'bg-slate-50 border-slate-200 text-slate-800'
+              }`}
+            >
+              <option value="">
+                {filters.make ? `🚗 Modelos de ${filters.make}` : '🚗 Todos los Modelos'}
+              </option>
+              {availableModels.map((model) => (
+                <option key={model} value={model}>
+                  {model}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Agency Select */}
+          <div className="sm:col-span-1 md:col-span-2">
+            <select
+              value={filters.agencyId}
+              onChange={(e) => setFilters({ ...filters, agencyId: e.target.value })}
+              className="w-full py-2.5 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs sm:text-sm focus:outline-none focus:border-blue-600 focus:bg-white transition-colors font-medium truncate"
+            >
+              <option value="">🏪 Todas las Agencias</option>
+              {agencies.map((agency) => (
+                <option key={agency.id} value={agency.id}>
+                  {agency.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort & Advanced Filters */}
+          <div className="sm:col-span-1 md:col-span-2 flex items-center gap-2">
             <select
               value={filters.sortBy}
               onChange={(e) => setFilters({ ...filters, sortBy: e.target.value as any })}
-              className="w-full py-2.5 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs sm:text-sm focus:outline-none focus:border-blue-600 focus:bg-white font-medium"
+              className="w-full py-2.5 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs sm:text-sm focus:outline-none focus:border-blue-600 focus:bg-white font-medium truncate"
             >
-              <option value="featured">Destacados Primero</option>
+              <option value="featured">Destacados</option>
               <option value="price_asc">Menor Precio</option>
               <option value="price_desc">Mayor Precio</option>
-              <option value="year_desc">Más Nuevos (Año)</option>
-              <option value="mileage_asc">Menor Kilometraje</option>
-              <option value="recent">Recién Publicados</option>
+              <option value="year_desc">Más Nuevos</option>
+              <option value="mileage_asc">Menor Km</option>
+              <option value="recent">Recientes</option>
             </select>
 
             <button
               onClick={() => setIsFilterDrawerOpen(!isFilterDrawerOpen)}
-              className={`p-2.5 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${
+              className={`p-2.5 rounded-xl border flex items-center justify-center shrink-0 transition-colors relative ${
                 isFilterDrawerOpen
                   ? 'bg-blue-700 text-white border-blue-700 font-bold'
+                  : hasActiveFilters
+                  ? 'bg-blue-50 text-blue-700 border-blue-300 font-bold'
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
               title="Filtros Avanzados"
             >
               <SlidersHorizontal className="w-5 h-5" />
+              {hasActiveFilters && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full border-2 border-white ring-1 ring-blue-600"></span>
+              )}
             </button>
           </div>
         </div>
+
+        {/* Active Filters Pill Bar (When filters are applied) */}
+        {hasActiveFilters && (
+          <div className="flex items-center gap-1.5 flex-wrap pt-1 text-xs">
+            <span className="text-slate-500 font-medium">Filtros activos:</span>
+            {filters.make && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 font-bold">
+                Marca: {filters.make}
+                <button
+                  onClick={() => setFilters({ ...filters, make: '', model: '' })}
+                  className="hover:text-blue-950 ml-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {filters.model && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 font-bold">
+                Modelo: {filters.model}
+                <button
+                  onClick={() => setFilters({ ...filters, model: '' })}
+                  className="hover:text-blue-950 ml-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {filters.agencyId && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 font-semibold">
+                Agencia: {agencies.find((a) => a.id === filters.agencyId)?.name || filters.agencyId}
+                <button
+                  onClick={() => setFilters({ ...filters, agencyId: '' })}
+                  className="hover:text-slate-950 ml-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {filters.search && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 font-semibold">
+                "{filters.search}"
+                <button
+                  onClick={() => setFilters({ ...filters, search: '' })}
+                  className="hover:text-slate-950 ml-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {selectedQuickCategory !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 font-semibold">
+                Categoría: {selectedQuickCategory}
+                <button
+                  onClick={() => setSelectedQuickCategory('all')}
+                  className="hover:text-amber-950 ml-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            <button
+              onClick={() => {
+                resetFilters();
+                setSelectedQuickCategory('all');
+              }}
+              className="text-slate-500 hover:text-rose-600 underline font-semibold ml-2"
+            >
+              Borrar todos
+            </button>
+          </div>
+        )}
 
         {/* Quick Category Buttons */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
@@ -276,18 +483,40 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
 
         {/* Advanced Filters Drawer */}
         {isFilterDrawerOpen && (
-          <div className="pt-4 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 text-xs animate-fadeIn">
+          <div className="pt-4 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs animate-fadeIn">
             <div>
               <label className="block text-slate-600 mb-1 font-semibold">Marca</label>
               <select
                 value={filters.make || ''}
-                onChange={(e) => setFilters({ ...filters, make: e.target.value || undefined })}
-                className="w-full bg-slate-50 text-slate-800 rounded-xl p-2 border border-slate-200"
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    make: e.target.value,
+                    model: '',
+                  })
+                }
+                className="w-full bg-slate-50 text-slate-800 rounded-xl p-2 border border-slate-200 focus:outline-none focus:border-blue-600 font-medium"
               >
-                <option value="">Todas</option>
-                {makes.map((m) => (
+                <option value="">Todas las Marcas</option>
+                {allMakes.map((m) => (
                   <option key={m} value={m}>
                     {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-slate-600 mb-1 font-semibold">Modelo</label>
+              <select
+                value={filters.model || ''}
+                onChange={(e) => setFilters({ ...filters, model: e.target.value })}
+                className="w-full bg-slate-50 text-slate-800 rounded-xl p-2 border border-slate-200 focus:outline-none focus:border-blue-600 font-medium"
+              >
+                <option value="">{filters.make ? `Todos los ${filters.make}` : 'Todos los Modelos'}</option>
+                {availableModels.map((mod) => (
+                  <option key={mod} value={mod}>
+                    {mod}
                   </option>
                 ))}
               </select>
@@ -298,7 +527,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               <select
                 value={filters.bodyType || ''}
                 onChange={(e) => setFilters({ ...filters, bodyType: (e.target.value as BodyType) || undefined })}
-                className="w-full bg-slate-50 text-slate-800 rounded-xl p-2 border border-slate-200"
+                className="w-full bg-slate-50 text-slate-800 rounded-xl p-2 border border-slate-200 focus:outline-none focus:border-blue-600 font-medium"
               >
                 <option value="">Todas</option>
                 {bodyTypes.map((b) => (
@@ -314,7 +543,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               <select
                 value={filters.condition || ''}
                 onChange={(e) => setFilters({ ...filters, condition: (e.target.value as CarCondition) || undefined })}
-                className="w-full bg-slate-50 text-slate-800 rounded-xl p-2 border border-slate-200"
+                className="w-full bg-slate-50 text-slate-800 rounded-xl p-2 border border-slate-200 focus:outline-none focus:border-blue-600 font-medium"
               >
                 <option value="">Todas</option>
                 <option value="Usado">Usado Seleccionado</option>
@@ -328,7 +557,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               <select
                 value={filters.transmission || ''}
                 onChange={(e) => setFilters({ ...filters, transmission: (e.target.value as any) || undefined })}
-                className="w-full bg-slate-50 text-slate-800 rounded-xl p-2 border border-slate-200"
+                className="w-full bg-slate-50 text-slate-800 rounded-xl p-2 border border-slate-200 focus:outline-none focus:border-blue-600 font-medium"
               >
                 <option value="">Todas</option>
                 <option value="Manual">Manual</option>
@@ -336,13 +565,53 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
               </select>
             </div>
 
-            <div className="col-span-2 flex items-end justify-end gap-2">
+            <div>
+              <label className="block text-slate-600 mb-1 font-semibold">Combustible</label>
+              <select
+                value={filters.fuelType || ''}
+                onChange={(e) => setFilters({ ...filters, fuelType: (e.target.value as any) || undefined })}
+                className="w-full bg-slate-50 text-slate-800 rounded-xl p-2 border border-slate-200 focus:outline-none focus:border-blue-600 font-medium"
+              >
+                <option value="">Todos</option>
+                <option value="Nafta">Nafta</option>
+                <option value="Diésel">Diésel</option>
+                <option value="Híbrido">Híbrido</option>
+                <option value="Eléctrico">Eléctrico</option>
+                <option value="Flex">Flex</option>
+              </select>
+            </div>
+
+            <div className="col-span-2 sm:col-span-3 lg:col-span-6 flex items-center justify-between pt-2 border-t border-slate-100">
+              <div className="flex items-center gap-4 text-xs font-semibold text-slate-700">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(filters.financingAvailable)}
+                    onChange={(e) => setFilters({ ...filters, financingAvailable: e.target.checked })}
+                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span>Financiación disponible</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(filters.acceptsTradeIn)}
+                    onChange={(e) => setFilters({ ...filters, acceptsTradeIn: e.target.checked })}
+                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span>Acepta permuta</span>
+                </label>
+              </div>
+
               <button
-                onClick={resetFilters}
+                onClick={() => {
+                  resetFilters();
+                  setSelectedQuickCategory('all');
+                }}
                 className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs flex items-center gap-1 border border-slate-200"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Limpiar Filtros</span>
+                <span>Limpiar Todos los Filtros</span>
               </button>
             </div>
           </div>
@@ -529,21 +798,35 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
                       )}
                     </div>
 
-                    {/* Action Buttons: WhatsApp & View Details */}
-                    <div className="grid grid-cols-2 gap-2">
+                    {/* Action Buttons: WhatsApp, PDF Quote & View Details */}
+                    <div className="grid grid-cols-12 gap-1.5">
                       <button
                         onClick={() => handleSelectCar(car)}
-                        className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors border border-slate-200"
+                        className="col-span-5 py-2.5 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-1 transition-colors border border-slate-200"
+                        title="Ver ficha técnica completa"
                       >
                         <Eye className="w-3.5 h-3.5" />
-                        <span>Ver Ficha</span>
+                        <span>Ficha</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setQuoteCar(car);
+                          setIsQuoteModalOpen(true);
+                        }}
+                        className="col-span-3 py-2.5 px-1 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center gap-1 transition-colors border border-blue-200"
+                        title="Generar Cotización Proforma en PDF"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>PDF</span>
                       </button>
 
                       <button
                         onClick={() => openWhatsappForCar(car)}
-                        className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-98"
+                        className="col-span-4 py-2.5 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-sm transition-transform active:scale-98"
+                        title="Chatear por WhatsApp"
                       >
-                        <MessageCircle className="w-4 h-4 fill-white" />
+                        <MessageCircle className="w-3.5 h-3.5 fill-white" />
                         <span>WhatsApp</span>
                       </button>
                     </div>
@@ -586,6 +869,16 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Professional PDF Quote Modal */}
+      <CarQuotePdfModal
+        car={quoteCar}
+        isOpen={isQuoteModalOpen}
+        onClose={() => {
+          setIsQuoteModalOpen(false);
+          setQuoteCar(null);
+        }}
+      />
     </div>
   );
 };

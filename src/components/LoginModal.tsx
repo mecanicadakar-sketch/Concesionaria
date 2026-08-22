@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { AppUser } from '../types';
+import micarroLogo from '../assets/images/logo.png';
 import {
   User,
   Lock,
@@ -164,8 +165,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center shadow-sm">
-              <KeyRound className="w-5 h-5" />
+            <div className="w-11 h-11 overflow-hidden flex items-center justify-center shrink-0">
+              <img
+                src={micarroLogo}
+                alt="Logo MiCarro"
+                className="w-full h-full object-contain filter drop-shadow-sm"
+                referrerPolicy="no-referrer"
+              />
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -297,7 +303,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                     type="text"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="Ej: dakar.auto o tu@email.com"
+                    placeholder="Ej: juan.perez o tu@email.com"
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white"
                   />
                 </div>

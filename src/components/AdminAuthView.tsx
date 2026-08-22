@@ -15,7 +15,7 @@ export const AdminAuthView: React.FC<AdminAuthViewProps> = ({ onSuccess }) => {
     unlockAdminDirectly,
   } = useApp();
 
-  const [adminEmail, setAdminEmail] = useState('mecanicadakar@gmail.com');
+  const [adminEmail, setAdminEmail] = useState('admin@micarro.com');
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');

@@ -92,7 +92,7 @@ export const AdminSaasPanelView: React.FC = () => {
   const [newAgencyData, setNewAgencyData] = useState({
     name: '',
     slug: '',
-    logoUrl: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=150',
+    logoUrl: '/logo.png',
     ownerName: '',
     email: '',
     phone: '',
@@ -872,11 +872,13 @@ export const AdminSaasPanelView: React.FC = () => {
                 <div key={agency.id} className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
                   <div className="flex items-start justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-3">
-                      <img
-                        src={agency.logoUrl}
-                        alt={agency.name}
-                        className="w-12 h-12 rounded-2xl object-cover border border-slate-200"
-                      />
+                      <div className="w-12 h-12 flex items-center justify-center shrink-0">
+                        <img
+                          src={agency.logoUrl}
+                          alt={agency.name}
+                          className="w-full h-full object-contain filter drop-shadow-sm"
+                        />
+                      </div>
                       <div>
                         <h4 className="font-bold text-slate-900 text-base">{agency.name}</h4>
                         <p className="text-xs text-slate-500">{agency.city}, {agency.provinceOrState}</p>

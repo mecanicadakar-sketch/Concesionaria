@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { CarListing } from '../types';
+import { CarQuotePdfModal } from './CarQuotePdfModal';
 import {
   X,
   MessageCircle,
@@ -23,6 +24,7 @@ import {
   Sparkles,
   DollarSign,
   Calculator,
+  FileText,
 } from 'lucide-react';
 
 interface CarDetailModalProps {
@@ -36,6 +38,7 @@ export const CarDetailModal: React.FC<CarDetailModalProps> = ({ car, onClose, on
 
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [selectedTab, setSelectedTab] = useState<'specs' | 'financing' | 'tradein'>('specs');
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
   // Financing Calculator State
   const [downPaymentPercent, setDownPaymentPercent] = useState<number>(30);
@@ -97,6 +100,14 @@ export const CarDetailModal: React.FC<CarDetailModalProps> = ({ car, onClose, on
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsQuoteModalOpen(true)}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white shadow-sm flex items-center gap-1.5 transition-all active:scale-98"
+              title="Generar Cotización Proforma en PDF"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>📄 Cotización PDF</span>
+            </button>
             {onEditCar && (
               <button
                 onClick={() => onEditCar(car)}
@@ -450,16 +461,33 @@ export const CarDetailModal: React.FC<CarDetailModalProps> = ({ car, onClose, on
               </div>
             </div>
 
-            <button
-              onClick={() => openWhatsappForCar(car)}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-transform active:scale-98"
-            >
-              <MessageCircle className="w-4 h-4 fill-white" />
-              <span>Chatear por WhatsApp Ahora</span>
-            </button>
+            <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+              <button
+                onClick={() => setIsQuoteModalOpen(true)}
+                className="w-full sm:w-auto px-5 py-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-transform active:scale-98"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Generar Cotización PDF</span>
+              </button>
+
+              <button
+                onClick={() => openWhatsappForCar(car)}
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-transform active:scale-98"
+              >
+                <MessageCircle className="w-4 h-4 fill-white" />
+                <span>Chatear por WhatsApp</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Professional PDF Quote Modal */}
+      <CarQuotePdfModal
+        car={car}
+        isOpen={isQuoteModalOpen}
+        onClose={() => setIsQuoteModalOpen(false)}
+      />
     </div>
   );
 };

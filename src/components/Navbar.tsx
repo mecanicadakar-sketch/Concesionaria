@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import micarroLogo from '../assets/images/logo.png';
 import {
   Car,
   Building2,
@@ -37,6 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCarForm, onOpenSettings, o
     agencies,
     carListings,
     privateOffers,
+    leads,
     currentUser,
     setIsAuthModalOpen,
     logout,
@@ -58,6 +60,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCarForm, onOpenSettings, o
   };
 
   const pendingOffersCount = privateOffers.filter((o) => o.status === 'pending').length;
+  const newAgencyLeadsCount = leads.filter((l) => l.agencyId === currentAgencyId && l.status === 'new').length;
+  const totalAgencyAlerts = newAgencyLeadsCount + pendingOffersCount;
   const agencyCarsCount = carListings.filter((c) => c.agencyId === currentAgencyId).length;
 
   const navLinks = [
@@ -65,7 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCarForm, onOpenSettings, o
       id: 'agency-panel',
       label: 'Portal Carga & Salón',
       icon: Building2,
-      badge: `${agencyCarsCount} autos`,
+      badge: totalAgencyAlerts > 0 ? `🔔 ${totalAgencyAlerts} alertas` : `${agencyCarsCount} autos`,
       highlight: true,
     },
     {
@@ -155,7 +159,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCarForm, onOpenSettings, o
                       <img
                         src={agency.logoUrl}
                         alt={agency.name}
-                        className="w-5 h-5 rounded-full object-cover border border-slate-200 shrink-0"
+                        className="w-5 h-5 object-contain shrink-0 filter drop-shadow-xs"
                       />
                       <span className="truncate">{agency.name}</span>
                     </div>
@@ -267,10 +271,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCarForm, onOpenSettings, o
             onClick={handleGoHome}
             aria-label="Volver al inicio - MiCarro"
             title="Volver al inicio de la página"
-            className="flex items-center gap-2.5 text-left group cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 rounded-2xl p-1.5 -m-1.5 hover:bg-slate-50 transition-all active:scale-98"
+            className="flex items-center gap-3 text-left group cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 rounded-2xl p-1.5 -m-1.5 hover:bg-slate-50 transition-all active:scale-98"
           >
-            <div className="w-10 h-10 rounded-xl bg-blue-700 flex items-center justify-center shadow-md shadow-blue-700/20 group-hover:scale-105 group-active:scale-95 transition-transform text-white">
-              <Car className="w-6 h-6 stroke-[2.2]" />
+            <div className="w-10 h-10 sm:w-11 sm:h-11 overflow-hidden group-hover:scale-105 group-active:scale-95 transition-transform flex items-center justify-center shrink-0">
+              <img
+                src={micarroLogo}
+                alt="Logo MiCarro"
+                className="w-full h-full object-contain filter drop-shadow-sm"
+                referrerPolicy="no-referrer"
+              />
             </div>
             <div>
               <div className="flex items-center gap-1.5">

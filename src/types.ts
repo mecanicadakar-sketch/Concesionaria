@@ -32,6 +32,14 @@ export interface AppUser {
   lastLoginAt?: string;
 }
 
+export interface PredefinedWhatsappMessage {
+  id: string;
+  title: string;
+  category: 'car_inquiry' | 'financing' | 'trade_in' | 'test_drive' | 'general' | 'reservation';
+  text: string;
+  isDefault?: boolean;
+}
+
 export interface Agency {
   id: string;
   name: string;
@@ -42,9 +50,19 @@ export interface Agency {
   email: string;
   phone: string;
   whatsappNumber: string; // e.g. "5491133445566"
+  whatsappBusinessNumber?: string; // Dedicated WhatsApp Business line
+  whatsappCarInquiryTemplate?: string; // Custom template for car listing inquiries
+  whatsappFinancingTemplate?: string; // Custom template for financing inquiries
+  whatsappTradeInTemplate?: string; // Custom template for trade-in / appraisal requests
+  whatsappTestDriveTemplate?: string; // Custom template for test drive booking
+  whatsappPredefinedMessages?: PredefinedWhatsappMessage[]; // Quick preset responses library
   address: string;
   city: string;
   provinceOrState: string;
+  cuitOrTaxId?: string; // RUC, CUIT or Tax ID
+  bankInfo?: string; // Default Bank account / Alias for quotes
+  defaultWarranty?: string; // Default warranty terms for quotes
+  website?: string;
   verified: boolean;
   subscriptionPlanId: string;
   subscriptionStatus: SubscriptionStatus;
